@@ -1,7 +1,10 @@
 import { useState } from "react";
+import logo from "../images/logo.png"; // Pense à vérifier le chemin de ton logo ici
 
-export default function Sidebar({ mail, prenom }) {    // Permet de savoir quel onglet est actuellement sélectionné
+export default function Sidebar({ mail, prenom }) {
     const [activeTab, setActiveTab] = useState("Tableau de bord");
+    // État pour ouvrir/fermer la sidebar
+    const [isOpen, setIsOpen] = useState(true);
 
     const menuItems = [
         { name: "Tableau de bord", icon: (
@@ -28,41 +31,69 @@ export default function Sidebar({ mail, prenom }) {    // Permet de savoir quel 
     ];
 
     return (
-// Dans ton fichier Sidebar, change la balise <aside> pour mettre ça :
-    <aside className="fixed top-16 left-0 h-[calc(100vh-64px)] w-64 bg-white text-gray-700 flex flex-col justify-between border-r border-gray-100 shadow-sm z-50">            
-            {/* Zone Haute : Menu */}
-            <div className="px-4 py-6">
-                
-                {/* Liste des onglets de navigation */}
-                <nav className="space-y-1">
-                    {menuItems.map((item) => {
-                        const isSelected = activeTab === item.name;
-                        return (
-                            <button
-                                key={item.name}
-                                onClick={() => setActiveTab(item.name)}
-                                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer group ${
-                                    isSelected 
-                                        ? "bg-blue-50 text-blue-600 font-semibold" 
-                                        : "hover:bg-gray-50 text-gray-500 hover:text-blue-500"
-                                }`}
-                            >
-                                {/* Icône réactive */}
-                                <span className={`${isSelected ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600 transition-colors"}`}>
-                                    {item.icon}
-                                </span>
-                                {item.name}
-                            </button>
-                        );
-                    })}
-                </nav>
-            </div>
+        <>
+            {/* Bouton flottant pour réouvrir la barre si elle est fermée */}
+            {!isOpen && (
+                <button 
+                    onClick={() => setIsOpen(true)}
+                    className="fixed top-3.5 left-4 z-50 p-2 rounded-xl bg-white border border-gray-100 shadow-sm text-gray-600 hover:text-blue-600 cursor-pointer"
+                >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            )}
 
-                {/* Zone Basse : Section Profil de l'utilisateur */}
+            {/* Structure de la Sidebar (Passe au-dessus grâce à top-0 et z-50) */}
+            <aside className={`fixed top-0 left-0 h-screen w-64 bg-white text-gray-700 flex flex-col justify-between border-r border-gray-100 shadow-md z-50 transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>            
+                
+                {/* Zone Haute : Brand (Logo + Nom) & Bouton Fermer */}
+                <div className="px-4 py-4">
+                    <div className="flex items-center justify-between px-2 mb-6 h-9">
+                        <div className="flex items-center gap-3">
+                            <img src={logo} alt="Logo" className="h-8 w-auto object-contain" />
+                            <h1 className="text-lg font-bold text-gray-900 tracking-tight">WatchBoard</h1>
+                        </div>
+                        
+                        {/* Bouton pour Fermer la barre */}
+                        <button 
+                            onClick={() => setIsOpen(false)}
+                            className="p-1 rounded-lg text-gray-400 hover:bg-gray-50 hover:text-gray-600 cursor-pointer"
+                        >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    {/* Liste des onglets de navigation */}
+                    <nav className="space-y-1">
+                        {menuItems.map((item) => {
+                            const isSelected = activeTab === item.name;
+                            return (
+                                <button
+                                    key={item.name}
+                                    onClick={() => setActiveTab(item.name)}
+                                    className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer group ${
+                                        isSelected 
+                                            ? "bg-blue-50 text-blue-600 font-semibold" 
+                                            : "hover:bg-gray-50 text-gray-500 hover:text-blue-500"
+                                    }`}
+                                >
+                                    <span className={`${isSelected ? "text-blue-600" : "text-gray-400 group-hover:text-gray-600 transition-colors"}`}>
+                                        {item.icon}
+                                    </span>
+                                    {item.name}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
+
+                {/* Zone Basse : Section Profil */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50/50">
                     <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-100/70 transition-colors duration-200 cursor-pointer">
                         <div className="flex items-center gap-3">
-                            {/* Infos utilisateur */}
                             <div className="flex flex-col">
                                 <span className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
                                     {prenom || "Prenom test"}
@@ -73,15 +104,19 @@ export default function Sidebar({ mail, prenom }) {    // Permet de savoir quel 
                             </div>
                         </div>
 
-                    {/* Icône de déconnexion */}
-                    <button className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-white cursor-pointer transition-colors shadow-none hover:shadow-sm border border-transparent hover:border-gray-100" title="Déconnexion">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                    </button>
+                        {/* Bouton de déconnexion corrigé et refermé */}
+                        <button 
+                            className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-white cursor-pointer transition-colors shadow-none hover:shadow-sm border border-transparent hover:border-gray-100" 
+                            title="Déconnexion"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-        </aside>
+            </aside>
+        </>
     );
 }
