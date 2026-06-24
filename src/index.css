@@ -6,12 +6,21 @@
   --mono: ui-monospace, Consolas, monospace;
 }
 
+@theme {
+  --color-background: #FCFCFC;
+  --color-primary: #5AA9AD;
+  --color-secondary: #46ACC2;
+}
+
+* {
+  transition: .2s;
+}
+
 body {
   margin: 0;
 }
 
-@theme {
-  --color-background: #FCFCFC;
-  --color-primary: #66D4DA;
-  --color-secondary: #46ACC2;
+h1 {
+  font-weight: 600;
+  font-size: 24px;
 }
