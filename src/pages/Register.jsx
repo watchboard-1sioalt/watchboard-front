@@ -4,10 +4,10 @@ import { Link } from "react-router-dom"; // L'import indispensable !
 export default function Register() {
     const [nom, setNom] = useState('');
     const [prenom, setPrenom] = useState('');
-    const [mail, setEmail] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const credentials = { nom, prenom, mail, password };
+    const credentials = { nom, prenom, email, password };
 
 
     const handleRegister = async (e) => {
@@ -63,7 +63,7 @@ export default function Register() {
                 </div>
 
                 {/* Formulaire */}
-                <form className="flex flex-col space-y-3 w-full" onSubmit={(e) => { e.preventDefault(); window.location.href = "/login"; }}>
+                <form>
                     
                     {/* Nom et Prénom alignés horizontalement */}
                     <div className="flex gap-2">
@@ -101,7 +101,7 @@ export default function Register() {
                     {/* Bouton d'inscription natif */}
                     <div className="pt-2">
                         <button 
-                            type="submit"
+                            onClick={handleRegister}
                             className="w-full rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-4 text-sm shadow-sm transition-colors cursor-pointer"
                         >
                             S'inscrire

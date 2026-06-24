@@ -45,7 +45,7 @@ export default function Test() {
                 </div>
                 <div className="mt-5 h-0.25 w-full bg-gray-200 mx-4"></div>
                 <section>
-                    <h2 className="m-5">Vos articles enregistrés</h2>
+                    <h2 className="m-5" >Vos articles enregistrés</h2>
                 </section>
             </main>
         </div>

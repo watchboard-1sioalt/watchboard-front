@@ -1,7 +1,48 @@
 import logo from "../images/logo.png";
+import { useState } from "react";
 import { Link } from "react-router-dom"; // L'import indispensable !
 
+
 export default function Login() {
+
+        const [email, setEmail] = useState('');
+        const [password, setPassword] = useState('');
+
+        const credentials = { email, password };
+
+        const handleLogin = async (e) => {
+        e.preventDefault();
+
+        try {
+            // 2. Envoyer la requête POST à ton API backend
+            const response = await fetch("http://localhost/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json", // On prévient le serveur qu'on envoie du JSON
+                },
+                body: JSON.stringify(credentials), // Convertit l'objet JS en chaîne JSON
+            });
+        
+            // 3. Lire la réponse du serveur
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log("Connexion réussie !", data);
+            window.location.href = "/";
+
+        } else {
+            // Le serveur a répondu mais avec une erreur (ex: mauvais mot de passe)
+            alert(data.message || "Email ou mot de passe incorrect");
+        }
+
+    } catch (error) {
+        // Erreur réseau (ex: le serveur backend est éteint)
+        console.error("Erreur réseau :", error);
+        alert("Impossible de joindre le serveur.");
+    }
+}
+
+
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
             {/* Conteneur blanc harmonisé avec la DA globale */}
@@ -18,14 +59,16 @@ export default function Login() {
                 </div>
 
                 {/* Formulaire avec inputs stylisés */}
-                <form className="flex flex-col space-y-3 w-full" onSubmit={(e) => { e.preventDefault(); window.location.href = "/"; }}>
+                <form>
                     <input 
+                        onChange={(e) => setEmail(e.target.value)}
                         type="email"
                         placeholder="Email" 
                         required
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500 bg-gray-50/50 transition-colors"
                     />
                     <input 
+                        onChange={(e) => setPassword(e.target.value)}
                         type="password"
                         placeholder="Mot de passe" 
                         required
@@ -35,7 +78,7 @@ export default function Login() {
                     {/* Bouton de connexion local */}
                     <div className="pt-2">
                         <button 
-                            type="submit"
+                            onClick={handleLogin}
                             className="w-full rounded-xl bg-blue-400 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 text-sm shadow-sm transition-colors cursor-pointer"
                         >
                             Se connecter
