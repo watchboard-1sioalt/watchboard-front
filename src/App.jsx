@@ -1,18 +1,24 @@
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Navbar from './components/Navbar/Navbar'
+import AuthGuard from './components/AuthGuard'
 
-// Router (permet de gérer les différentes pages)
 function App() {
   return (
     <main className="flex flex-col">
       <Navbar />
       <Routes>
-        <Route path="/" element={<Home />} />
+        {/* Routes publiques */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Routes protégées (connexion requise) */}
+        <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
+
+        {/* route admin : */}
+        {/* <Route path="/admin" element={<AuthGuard adminOnly><Admin /></AuthGuard>} /> */}
       </Routes>
     </main>
   )
