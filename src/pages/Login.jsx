@@ -3,8 +3,8 @@ import TextInput from "../components/Inputs/TextInput";
 
 import { CiUser } from "react-icons/ci";
 
-
 export default function Login() {
+
     return (
         <div className="min-h-screen flex items-center justify-center">
             <div className="flex flex-col justify-center items-center p-8">
@@ -19,7 +19,7 @@ export default function Login() {
                     <TextInput placeholder={"Mot de passe"} type={"password"} />
                 </form>
 
-                <Button title={"Se connecter"} style="rounded-full mt-2" />
+                <Button title={"Se connecter"} style="rounded-full mt-2" onClick={truc} />
 
                 <p className="text-gray-400 text-sm mt-2">OU</p>
                 <a href="/register" className="text-xs text-secondary mt-1 hover:text-primary">Créer un compte</a>

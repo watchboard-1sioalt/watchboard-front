@@ -26,7 +26,7 @@ export default function Register() {
                 <Button title={"S'inscrire"} style="rounded-full mt-2" />
 
                 <p className="text-gray-400 text-sm mt-2">OU</p>
-                <a href="/register" className="text-xs text-secondary mt-1 hover:text-primary">Se connecter</a>
+                <a href="/login" className="text-xs text-secondary mt-1 hover:text-primary">Se connecter</a>
             </div>
         </div>
     )
