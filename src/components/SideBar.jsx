@@ -4,22 +4,24 @@ import { useUser } from "../contexts/UserContext";
 import {
     FiGrid, FiFileText, FiBarChart2, FiSettings,
     FiChevronLeft, FiChevronRight, FiLogOut, FiUser, FiShield,
+
 } from "react-icons/fi";
+import DashboardHome from "./DashboardPages/DashboardHome";
 
 const OPEN_W = "16rem";
 const SLIM_W = "3.5rem";
 const CLOSED_W = "0rem";
 
-const menuItems = [
-    { name: "Tableau de bord", icon: <FiGrid size={20} /> },
+export const menuItems = [
+    { name: "Tableau de bord", icon: <FiGrid size={20} />, element: <DashboardHome /> },
     { name: "Articles", icon: <FiFileText size={20} /> },
     { name: "Statistiques", icon: <FiBarChart2 size={20} /> },
     { name: "Paramètres", icon: <FiSettings size={20} /> },
+    { name: "Administration", icon: <FiShield size={20} />, admin: true }
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ activeTab, onTabChange }) {
     const [isOpen, setIsOpen] = useState(() => window.innerWidth >= 768);
-    const [activeTab, setActiveTab] = useState("Tableau de bord");
     const { user, logout } = useUser();
     const navigate = useNavigate();
 
@@ -86,14 +88,26 @@ export default function Sidebar() {
                 {/* Inner wrapper clips overflowing text during transition */}
                 <div className="flex flex-col h-full overflow-hidden">
 
+                    {/* Mobile close button — visible only when open on small screens */}
+                    <div className="md:hidden flex justify-end px-2 pt-3">
+                        <button
+                            onClick={() => setIsOpen(false)}
+                            className="flex items-center justify-center w-8 h-8 rounded-xl
+                                       text-gray-400 hover:text-blue-500 hover:bg-gray-100 transition-colors cursor-pointer"
+                        >
+                            <FiChevronLeft size={18} />
+                        </button>
+                    </div>
+
                     {/* Nav */}
                     <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1">
                         {menuItems.map((item) => {
+                            if (item.admin && !user.admin) return;
                             const active = activeTab === item.name;
                             return (
                                 <button
                                     key={item.name}
-                                    onClick={() => setActiveTab(item.name)}
+                                    onClick={() => onTabChange(item.name)}
                                     title={!isOpen ? item.name : undefined}
                                     className={`
                                         w-full flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-medium
