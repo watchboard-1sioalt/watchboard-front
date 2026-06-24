@@ -1,50 +1,31 @@
-import logo from "../images/logo.png";
 import { useState } from "react";
-import { Link } from "react-router-dom"; // L'import indispensable !
-
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 
 export default function Login() {
-    const [submitting, setSubmitting] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const { login } = useUser();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const from = location.state?.from?.pathname ?? "/";
 
-    const credentials = { email, password };
+    const [email, setEmail]         = useState("");
+    const [password, setPassword]   = useState("");
+    const [error, setError]         = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
-
+        setError(null);
         setSubmitting(true);
         try {
-            // 2. Envoyer la requête POST à ton API backend
-            const response = await fetch("http://localhost/api/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json", // On prévient le serveur qu'on envoie du JSON
-                },
-                body: JSON.stringify(credentials), // Convertit l'objet JS en chaîne JSON
-            });
-
-            // 3. Lire la réponse du serveur
-            const data = await response.json();
-
-            if (response.ok) {
-                console.log("Connexion réussie !", data);
-                window.location.href = "/";
-
-            } else {
-                // Le serveur a répondu mais avec une erreur (ex: mauvais mot de passe)
-                alert(data.message || "Email ou mot de passe incorrect");
-            }
-
-        } catch (error) {
-            // Erreur réseau (ex: le serveur backend est éteint)
-            console.error("Erreur réseau :", error);
-            alert("Impossible de joindre le serveur.");
+            await login(email, password);
+            navigate(from, { replace: true });
+        } catch (err) {
+            setError(err.message || "Email ou mot de passe incorrect");
+        } finally {
+            setSubmitting(false);
         }
-
-        setSubmitting(false);
-    }
-
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -59,10 +40,14 @@ export default function Login() {
                     <h1 className="text-xl font-bold text-gray-900">Connexion</h1>
                 </div>
 
-                {/* Formulaire avec inputs stylisés */}
-                <form>
+                {error && (
+                    <p className="w-full mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2 text-center">
+                        {error}
+                    </p>
+                )}
+
+                <form onSubmit={handleLogin} className="flex flex-col space-y-3 w-full">
                     <input
-                        onChange={(e) => setEmail(e.target.value)}
                         type="email"
                         placeholder="Email"
                         required
@@ -71,7 +56,6 @@ export default function Login() {
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500 bg-gray-50/50 transition-colors"
                     />
                     <input
-                        onChange={(e) => setPassword(e.target.value)}
                         type="password"
                         placeholder="Mot de passe"
                         required
@@ -82,8 +66,9 @@ export default function Login() {
 
                     <div className="pt-2">
                         <button
-                            onClick={handleLogin}
-                            className="w-full rounded-xl bg-blue-400 hover:bg-blue-500 text-white font-semibold py-2.5 px-4 text-sm shadow-sm transition-colors cursor-pointer"
+                            type="submit"
+                            disabled={submitting}
+                            className="w-full rounded-xl bg-blue-400 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold py-2.5 px-4 text-sm shadow-sm transition-colors cursor-pointer"
                         >
                             {submitting ? "Connexion..." : "Se connecter"}
                         </button>
