@@ -4,7 +4,7 @@ import { Link } from "react-router-dom"; // L'import indispensable !
 
 
 export default function Login() {
-
+    const [submitting, setSubmitting] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -13,6 +13,7 @@ export default function Login() {
     const handleLogin = async (e) => {
         e.preventDefault();
 
+        setSubmitting(true);
         try {
             // 2. Envoyer la requête POST à ton API backend
             const response = await fetch("http://localhost/api/auth/login", {
@@ -40,6 +41,8 @@ export default function Login() {
             console.error("Erreur réseau :", error);
             alert("Impossible de joindre le serveur.");
         }
+
+        setSubmitting(false);
     }
 
 

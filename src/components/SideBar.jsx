@@ -115,7 +115,7 @@ export default function Sidebar() {
                     </nav>
 
                     {/* User section */}
-                    <div className="shrink-0 border-t border-gray-100 bg-gray-50/50 p-3">
+                    <div className="shrink-0 border-t border-gray-300 bg-gray-50/50 px-3 pb-2 pt-1">
                         <div className={`flex items-center gap-3 px-2 py-2 ${isOpen ? "justify-between" : "justify-center"}`}>
                             {isOpen && (
                                 <div className="flex flex-col min-w-0">
