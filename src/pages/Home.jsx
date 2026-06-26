@@ -12,12 +12,12 @@ export default function Home() {
         <div className="flex flex-col min-h-screen bg-gray-50/50">
             <SideBarView activeTab={activeTab} onTabChange={setActiveTab} />
             <main
-                className="flex-1 transition-[margin-left] duration-300 p-5"
-                style={{ marginLeft: "var(--sidebar-width, 0)" }}
+                className="flex-1 transition-[margin-left] duration-300 p-5 pl-8"
+                style={{ marginLeft: "calc(var(--sidebar-width, 0)" }}
             >
                 {activeItem?.element ?? (
                     <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                        {activeTab} — page à venir
+                        {activeTab} - page à venir
                     </div>
                 )}
             </main>
