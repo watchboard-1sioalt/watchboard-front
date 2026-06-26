@@ -1,7 +1,15 @@
 import image from "../../images/test.png";
+import { useToast } from "../Toast/Toast";
+
+
+
 
 export default function Cards({ couleur, titre, description, date, auteur }) {
+
+     const { toast } = useToast();
+
     return (
+        
         <div className={`w-full max-w-sm rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${couleur ? couleur : 'bg-white'}`}> 
             
             {/* Zone image */}
@@ -29,7 +37,10 @@ export default function Cards({ couleur, titre, description, date, auteur }) {
                     
                     {/* Icône Enregistrer (Bookmark) */}
                     <button 
-                        onClick={() => alert("Article enregistré !")}
+                        onClick={() => toast.success({
+                            title: "Article enregistré",
+                            message: "Article mis dans vos articles favoris"
+                        })}
                         className="text-gray-400 hover:text-blue-400 transition-colors cursor-pointer p-1 rounded-lg hover:bg-gray-50 shrink-0"
                         title="Enregistrer l'article"
                     >

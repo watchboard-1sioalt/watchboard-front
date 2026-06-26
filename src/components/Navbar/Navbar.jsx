@@ -3,14 +3,22 @@ import Logo from "../../assets/logo.png";
 import { useUser } from "../../contexts/UserContext";
 import SearchBarView from "../SearchBarView";
 import { FiLogOut } from "react-icons/fi";
+import { useToast } from "../Toast/Toast";
+
 
 
 export default function Navbar() {
+
+    const { toast } = useToast();
     const { user, loading, logout } = useUser();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
+        toast.success({
+            title: "Déconnexion réussie.",
+            message: "Votre compte a été déconnecté avec succès"
+        })
         navigate("/login");
     };
 
@@ -34,7 +42,10 @@ export default function Navbar() {
                                 {user.prenom} {user.nom.toString().toUpperCase()}
                             </span>
                             <button
-                                onClick={handleLogout}
+                                onClick={handleLogout
+                                    
+                                }
+                                
                                 className="text-sm text-gray-400 text-red-400 hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none"
                             >
                                 <FiLogOut size={22} />

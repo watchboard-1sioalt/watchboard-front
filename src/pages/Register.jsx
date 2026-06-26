@@ -146,12 +146,6 @@ export default function Register() {
                         Se connecter
                     </button>
                 </Link>
-                
-                <Link to="/">
-                    <button className="text-sm font-small text-gray-400 mt-2 hover:underline cursor-pointer bg-transparent border-none">
-                        Retourner à la page principale
-                    </button>
-                </Link>
             </div>
         </div>
     );

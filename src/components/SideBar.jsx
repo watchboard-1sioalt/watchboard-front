@@ -8,6 +8,7 @@ import {
 } from "react-icons/fi";
 import DashboardHome from "./DashboardPages/DashboardHome";
 import DashboardAdmin from "./DashboardPages/DashboardAdmin";
+import SettingsView from "./DashboardPages/SettingsView";
 
 const OPEN_W = "16rem";
 const SLIM_W = "3.5rem";
@@ -16,8 +17,8 @@ const CLOSED_W = "0rem";
 export const menuItems = [
     { name: "Tableau de bord", icon: <FiGrid size={20} />, element: <DashboardHome /> },
     { name: "Articles", icon: <FiFileText size={20} /> },
-    { name: "Statistiques", icon: <FiBarChart2 size={20} /> },
-    { name: "Paramètres", icon: <FiSettings size={20} /> },
+    { name: "Statistiques", icon: <FiBarChart2 size={20} />},
+    { name: "Paramètres", icon: <FiSettings size={20} />, element: <SettingsView/>},
     { name: "Administration", icon: <FiShield size={20} />, admin: true, element: <DashboardAdmin/>}
 ];
 
