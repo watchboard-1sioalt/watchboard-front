@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
+import { useToast } from "../components/Toast/Toast";
+import TextInput  from "../components/Inputs/TextInput"
+import Button from "../components/Inputs/Button"
 
 export default function Login() {
     const { login } = useUser();
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname ?? "/";
+
+    const { toast } = useToast();
 
     const [email, setEmail]         = useState("");
     const [password, setPassword]   = useState("");
@@ -20,8 +25,19 @@ export default function Login() {
         try {
             await login(email, password);
             navigate(from, { replace: true });
+            toast.success({
+                    title: "Inscription réussie !",
+                    message: "Redirection vers la page de connexion"
+                });
+                console.log("Connexion réussie !", data);
         } catch (err) {
             setError(err.message || "Email ou mot de passe incorrect");
+            if (data.message?.includes("Identifiant")) {
+                    
+                    toast.error({
+                        title: "Erreur de connexion",
+                        message: "Identifiant invalide"
+        })};
         } finally {
             setSubmitting(false);
         }
@@ -47,7 +63,7 @@ export default function Login() {
                 )}
 
                 <form onSubmit={handleLogin} className="flex flex-col space-y-3 w-full">
-                    <input
+                    <TextInput
                         type="email"
                         placeholder="Email"
                         required
@@ -55,7 +71,7 @@ export default function Login() {
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500 bg-gray-50/50 transition-colors"
                     />
-                    <input
+                    <TextInput
                         type="password"
                         placeholder="Mot de passe"
                         required

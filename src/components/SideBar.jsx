@@ -7,6 +7,7 @@ import {
 
 } from "react-icons/fi";
 import DashboardHome from "./DashboardPages/DashboardHome";
+import DashboardAdmin from "./DashboardPages/DashboardAdmin";
 
 const OPEN_W = "16rem";
 const SLIM_W = "3.5rem";
@@ -17,7 +18,7 @@ export const menuItems = [
     { name: "Articles", icon: <FiFileText size={20} /> },
     { name: "Statistiques", icon: <FiBarChart2 size={20} /> },
     { name: "Paramètres", icon: <FiSettings size={20} /> },
-    { name: "Administration", icon: <FiShield size={20} />, admin: true }
+    { name: "Administration", icon: <FiShield size={20} />, admin: true, element: <DashboardAdmin/>}
 ];
 
 export default function Sidebar({ activeTab, onTabChange }) {

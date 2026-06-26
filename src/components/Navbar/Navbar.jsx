@@ -43,9 +43,15 @@ export default function Navbar() {
                         </div>
                     </>
                 ) : (
+                    <div className=" flex gap-2.5">
                     <Link to="/login" className="bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-500 cursor-pointer">
                         Connexion
                     </Link>
+                    
+                    <Link to="/register" className="bg-white border-blue-600 border text-blue-600 py-2 px-3 rounded-lg hover:bg-gray-100 cursor-pointer">
+                        Inscription
+                    </Link>
+                   </div> 
                 )}
             </div>
         </header>
