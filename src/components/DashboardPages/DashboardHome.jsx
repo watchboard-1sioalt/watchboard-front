@@ -1,10 +1,8 @@
 import { useUser } from "../../contexts/UserContext";
-import { useUser } from "../../contexts/UserContext";
 import Cards from "../Cards/Cards";
 
 export default function DashboardHome() {
     const { user } = useUser()
-    const { user } = useUser();
 
     return (
         <>
