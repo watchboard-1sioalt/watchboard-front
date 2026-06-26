@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import {
-    FiGrid, FiFileText, FiBarChart2, FiSettings,
+    FiGrid, FiFileText, FiRss, FiSettings,
     FiChevronLeft, FiChevronRight, FiLogOut, FiUser, FiShield,
 
 } from "react-icons/fi";
 import DashboardHome from "./DashboardPages/DashboardHome";
+import DashboardArticles from "./DashboardPages/DashboardArticles";
+import DashboardFlux from './DashboardPages/DashboardFlux';
 
 const OPEN_W = "16rem";
 const SLIM_W = "3.5rem";
@@ -14,8 +16,8 @@ const CLOSED_W = "0rem";
 
 export const menuItems = [
     { name: "Tableau de bord", icon: <FiGrid size={20} />, element: <DashboardHome /> },
-    { name: "Articles", icon: <FiFileText size={20} /> },
-    { name: "Statistiques", icon: <FiBarChart2 size={20} /> },
+    { name: "Mes ressources", icon: <FiFileText size={20} />, element: <DashboardArticles /> },
+    { name: "Mes flux", icon: <FiRss size={20} />, element: <DashboardFlux /> },
     { name: "Paramètres", icon: <FiSettings size={20} /> },
     { name: "Administration", icon: <FiShield size={20} />, admin: true }
 ];
