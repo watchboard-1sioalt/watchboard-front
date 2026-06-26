@@ -9,6 +9,8 @@ import {
 import DashboardHome from "./DashboardPages/DashboardHome";
 import DashboardArticles from "./DashboardPages/DashboardArticles";
 import DashboardFlux from './DashboardPages/DashboardFlux';
+import SettingsView from "./DashboardPages/SettingsView";
+import DashboardAdmin from './DashboardPages/DashboardAdmin'
 
 const OPEN_W = "16rem";
 const SLIM_W = "3.5rem";
@@ -18,8 +20,8 @@ export const menuItems = [
     { name: "Tableau de bord", icon: <FiGrid size={20} />, element: <DashboardHome /> },
     { name: "Mes ressources", icon: <FiFileText size={20} />, element: <DashboardArticles /> },
     { name: "Mes flux", icon: <FiRss size={20} />, element: <DashboardFlux /> },
-    { name: "Paramètres", icon: <FiSettings size={20} /> },
-    { name: "Administration", icon: <FiShield size={20} />, admin: true }
+    { name: "Paramètres", icon: <FiSettings size={20} />, element: <SettingsView /> },
+    { name: "Administration", icon: <FiShield size={20} />, admin: true, element: <DashboardAdmin /> }
 ];
 
 export default function Sidebar({ activeTab, onTabChange }) {
