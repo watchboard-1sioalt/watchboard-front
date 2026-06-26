@@ -3,14 +3,22 @@ import Logo from "../../assets/logo.png";
 import { useUser } from "../../contexts/UserContext";
 import SearchBarView from "../SearchBarView";
 import { FiLogOut } from "react-icons/fi";
+import { useToast } from "../Toast/Toast";
+
 
 
 export default function Navbar() {
+
+    const { toast } = useToast();
     const { user, loading, logout } = useUser();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
+        toast.success({
+            title: "Déconnexion réussie.",
+            message: "Votre compte a été déconnecté avec succès"
+        })
         navigate("/login");
     };
 
@@ -36,7 +44,10 @@ export default function Navbar() {
                                 {user.prenom} {user.nom.toString().toUpperCase()}
                             </span>
                             <button
-                                onClick={handleLogout}
+                                onClick={handleLogout
+                                    
+                                }
+                                
                                 className="text-sm text-gray-400 text-red-400 hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none"
                             >
                                 <FiLogOut size={22} />
@@ -45,9 +56,15 @@ export default function Navbar() {
                         </div>
                     </>
                 ) : (
+                    <div className=" flex gap-2.5">
                     <Link to="/login" className="bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-500 cursor-pointer">
                         Connexion
                     </Link>
+                    
+                    <Link to="/register" className="bg-white border-blue-600 border text-blue-600 py-2 px-3 rounded-lg hover:bg-gray-100 cursor-pointer">
+                        Inscription
+                    </Link>
+                   </div> 
                 )}
             </div>
         </header>
