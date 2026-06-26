@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { useToast } from "../components/Toast/Toast";
-import TextInput  from "../components/Inputs/TextInput"
+import TextInput from "../components/Inputs/TextInput"
 import Button from "../components/Inputs/Button"
 
 export default function Login() {
@@ -13,9 +13,9 @@ export default function Login() {
 
     const { toast } = useToast();
 
-    const [email, setEmail]         = useState("");
-    const [password, setPassword]   = useState("");
-    const [error, setError]         = useState(null);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
     const handleLogin = async (e) => {
@@ -26,18 +26,19 @@ export default function Login() {
             await login(email, password);
             navigate(from, { replace: true });
             toast.success({
-                    title: "Inscription réussie !",
-                    message: "Redirection vers la page de connexion"
-                });
-                console.log("Connexion réussie !", data);
+                title: "Inscription réussie !",
+                message: "Redirection vers la page de connexion"
+            });
+            console.log("Connexion réussie !", data);
         } catch (err) {
             setError(err.message || "Email ou mot de passe incorrect");
-            if (data.message?.includes("Identifiant")) {
-                    
-                    toast.error({
-                        title: "Erreur de connexion",
-                        message: "Identifiant invalide"
-        })};
+            if (err?.message?.includes("Identifiant")) {
+
+                toast.error({
+                    title: "Erreur de connexion",
+                    message: "Identifiant invalide"
+                })
+            };
         } finally {
             setSubmitting(false);
         }

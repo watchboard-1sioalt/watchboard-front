@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
-import { FiRss, FiPlus, FiTrash2, FiEdit2, FiCheck, FiX, FiExternalLink, FiArrowLeft, FiRefreshCw } from "react-icons/fi";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { FiRss, FiPlus, FiTrash2, FiEdit2, FiCheck, FiX, FiExternalLink, FiArrowLeft, FiRefreshCw, FiTag } from "react-icons/fi";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import Tag from "../Tag";
 import Cards from "../Cards/Cards";
+import TagPickerModal from "../Modal/TagPickerModal";
+import SearchBarView from "../SearchBarView";
 
 const API = "http://localhost/api";
 
@@ -17,6 +19,7 @@ function FeedArticlesView({ feed, token, onBack }) {
     const articleKey = (article) => article.link || article.url || article.id;
 
     const handleSaveArticle = useCallback(async (article, save) => {
+        console.log(article)
         const key = articleKey(article);
         if (save) {
             const res = await fetch(`${API}/ressources/from-rss`, {
@@ -24,6 +27,8 @@ function FeedArticlesView({ feed, token, onBack }) {
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
                     url: article.link || article.url,
+                    resume: article.description,
+                    image: article.image || article.enclosure?.url || article.cover,
                     nom_original: article.title || undefined,
                     id_fluxrss: feed.id_fluxrss,
                 }),
@@ -68,7 +73,6 @@ function FeedArticlesView({ feed, token, onBack }) {
 
     return (
         <div className="max-w-5xl mx-auto">
-            {/* Header */}
             <div className="flex items-center gap-3 mb-4">
                 <button
                     onClick={onBack}
@@ -102,7 +106,6 @@ function FeedArticlesView({ feed, token, onBack }) {
                 </button>
             </div>
 
-            {/* Feed URL */}
             <a
                 href={feed.url}
                 target="_blank"
@@ -113,16 +116,16 @@ function FeedArticlesView({ feed, token, onBack }) {
                 {feed.url}
             </a>
 
-            {/* Tags */}
+
             {feed.tags && feed.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-6">
                     {feed.tags.map(tag => (
-                        <Tag key={tag.id_tag} title={tag.nom || tag.name} />
+                        <Tag key={tag.id_tag} title={tag.tag} />
                     ))}
                 </div>
             )}
 
-            {/* Articles */}
+
             {loading ? (
                 <div className="text-center py-20 text-gray-400 text-sm">Chargement des articles...</div>
             ) : articles.length === 0 ? (
@@ -174,6 +177,12 @@ export default function DashboardFlux() {
 
     const [confirmDelete, setConfirmDelete] = useState(null);
 
+    const [tagModal, setTagModal] = useState(false);
+    const [tagTarget, setTagTarget] = useState(null);
+
+    const [search, setSearch] = useState("");
+    const [selectedTagIds, setSelectedTagIds] = useState(new Set());
+
     const authHeaders = useCallback(() => ({
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -193,6 +202,29 @@ export default function DashboardFlux() {
     }, [authHeaders]);
 
     useEffect(() => { fetchFeeds(); }, [fetchFeeds]);
+
+    const availableTags = useMemo(() => {
+        const map = new Map();
+        feeds.forEach(f => (f.tags ?? []).forEach(t => map.set(t.id_tag, t)));
+        return [...map.values()];
+    }, [feeds]);
+
+    const filteredFeeds = useMemo(() => {
+        let result = feeds;
+        if (selectedTagIds.size > 0) {
+            result = result.filter(f =>
+                (f.tags ?? []).some(t => selectedTagIds.has(t.id_tag))
+            );
+        }
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            result = result.filter(f =>
+                (f.name ?? "").toLowerCase().includes(q) ||
+                (f.url ?? "").toLowerCase().includes(q)
+            );
+        }
+        return result;
+    }, [feeds, selectedTagIds, search]);
 
     if (selectedFeed) {
         return (
@@ -285,6 +317,23 @@ export default function DashboardFlux() {
         }
     };
 
+    const handleTagAdded = (tag) => {
+        setFeeds(prev => prev.map(f =>
+            f.id_fluxrss === tagTarget
+                ? { ...f, tags: [...(f.tags ?? []), tag] }
+                : f
+        ));
+        toast.success({ title: "Tag ajouté" });
+    };
+
+    const toggleTag = (id) => {
+        setSelectedTagIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-6">
@@ -300,6 +349,46 @@ export default function DashboardFlux() {
                     Ajouter un flux
                 </button>
             </div>
+
+            {!loading && feeds.length > 0 && (
+                <div className="mb-4">
+                    <SearchBarView
+                        value={search}
+                        onChange={setSearch}
+                        onClear={() => setSearch("")}
+                        placeholder="Rechercher par nom ou URL..."
+                    />
+                </div>
+            )}
+
+            {!loading && availableTags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mb-6">
+                    <FiTag size={14} className="text-gray-400 shrink-0" />
+                    {availableTags.map(tag => {
+                        const active = selectedTagIds.has(tag.id_tag);
+                        return (
+                            <button
+                                key={tag.id_tag}
+                                onClick={() => toggleTag(tag.id_tag)}
+                                className={`text-xs font-medium px-3 py-1 rounded-full border transition-colors cursor-pointer ${active
+                                    ? "bg-blue-600 text-white border-blue-600"
+                                    : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
+                                    }`}
+                            >
+                                {tag.tag}
+                            </button>
+                        );
+                    })}
+                    {selectedTagIds.size > 0 && (
+                        <button
+                            onClick={() => setSelectedTagIds(new Set())}
+                            className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline"
+                        >
+                            Tout afficher
+                        </button>
+                    )}
+                </div>
+            )}
 
             {showAddForm && (
                 <form onSubmit={handleAdd} className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col gap-3">
@@ -349,9 +438,20 @@ export default function DashboardFlux() {
                     <p className="text-sm">Vous n'avez pas encore de flux RSS.</p>
                     <p className="text-xs mt-1">Ajoutez votre premier flux avec le bouton ci-dessus.</p>
                 </div>
+            ) : filteredFeeds.length === 0 ? (
+                <div className="text-center py-16 text-gray-400">
+                    <FiTag size={36} className="mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Aucun flux ne correspond à votre recherche.</p>
+                    <button
+                        onClick={() => { setSelectedTagIds(new Set()); setSearch(""); }}
+                        className="text-xs text-blue-500 hover:text-blue-700 mt-2 cursor-pointer underline"
+                    >
+                        Réinitialiser les filtres
+                    </button>
+                </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {feeds.map(feed => (
+                    {filteredFeeds.map(feed => (
                         <div
                             key={feed.id_fluxrss}
                             className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
@@ -432,7 +532,7 @@ export default function DashboardFlux() {
                                             {feed.tags.map(tag => (
                                                 <Tag
                                                     key={tag.id_tag}
-                                                    title={tag.nom || tag.name}
+                                                    title={tag.tag}
                                                     onRemove={() => handleDetachTag(feed.id_fluxrss, tag.id_tag)}
                                                 />
                                             ))}
@@ -444,7 +544,15 @@ export default function DashboardFlux() {
                                         onClick={() => setSelectedFeed(feed)}
                                         className="text-xs text-blue-500 hover:text-blue-700 border border-blue-200 hover:border-blue-400 rounded-lg px-2.5 py-1 transition-colors cursor-pointer whitespace-nowrap"
                                     >
-                                        Voir les articles
+                                        Voir les ressources
+                                    </button>
+
+                                    <button
+                                        onClick={() => { setTagTarget(feed.id_fluxrss); setTagModal(true); }}
+                                        className="text-gray-300 hover:text-blue-500 transition-colors cursor-pointer"
+                                        title="Ajouter un tag"
+                                    >
+                                        <FiTag size={16} />
                                     </button>
 
                                     {confirmDelete === feed.id_fluxrss ? (
@@ -480,6 +588,22 @@ export default function DashboardFlux() {
                     ))}
                 </div>
             )}
+
+            <TagPickerModal
+                isOpen={tagModal}
+                onClose={() => setTagModal(false)}
+                currentTags={feeds.find(f => f.id_fluxrss === tagTarget)?.tags ?? []}
+                token={token}
+                onAttach={async (tag) => {
+                    const res = await fetch(`${API}/feeds/${tagTarget}/tags`, {
+                        method: "POST",
+                        headers: authHeaders(),
+                        body: JSON.stringify({ tag_id: tag.id_tag }),
+                    });
+                    if (!res.ok) throw new Error();
+                }}
+                onTagAdded={handleTagAdded}
+            />
         </div>
     );
 }

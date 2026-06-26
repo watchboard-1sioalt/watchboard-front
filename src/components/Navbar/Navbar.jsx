@@ -24,17 +24,17 @@ export default function Navbar() {
 
     return (
         <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-6 h-16 flex justify-between items-center shadow-sm">
-            <a className="flex flex-1 gap-2 align-middle items-center cursor-pointer" href={"/"}>
+            <div className="flex flex-1 gap-2 align-middle items-center">
                 <div className="w-12 ">
                     <img src={Logo} />
                 </div>
 
                 <h1 className="inline-block text-6xl font-bold
                     bg-gradient-to-r from-blue-400 to-blue-600
-                    bg-clip-text text-transparent">
+                    bg-clip-text text-transparent cursor-pointer" onClick={() => window.location.href = "/"}>
                     WatchBoard
                 </h1>
-            </a>
+            </div>
             <div className="flex items-center gap-4">
                 {!loading && user ? (
                     <>
@@ -45,9 +45,9 @@ export default function Navbar() {
                             </span>
                             <button
                                 onClick={handleLogout
-                                    
+
                                 }
-                                
+
                                 className="text-sm text-gray-400 text-red-400 hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none"
                             >
                                 <FiLogOut size={22} />
@@ -57,14 +57,14 @@ export default function Navbar() {
                     </>
                 ) : (
                     <div className=" flex gap-2.5">
-                    <Link to="/login" className="bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-500 cursor-pointer">
-                        Connexion
-                    </Link>
-                    
-                    <Link to="/register" className="bg-white border-blue-600 border text-blue-600 py-2 px-3 rounded-lg hover:bg-gray-100 cursor-pointer">
-                        Inscription
-                    </Link>
-                   </div> 
+                        <Link to="/login" className="bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-500 cursor-pointer">
+                            Connexion
+                        </Link>
+
+                        <Link to="/register" className="bg-white border-blue-600 border text-blue-600 py-2 px-3 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            Inscription
+                        </Link>
+                    </div>
                 )}
             </div>
         </header>

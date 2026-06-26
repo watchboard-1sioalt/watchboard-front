@@ -5,7 +5,7 @@ import defaultImage from "../../images/test.png";
 import Tag from "../Tag";
 import { FaPlus } from "react-icons/fa";
 
-export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, onSave }) {
+export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, onSave, onAddTag, onRemoveTag, onResume }) {
     const imgSrc = image || defaultImage;
     const [isSaved, setIsSaved] = useState(saved);
     const [saving, setSaving] = useState(false);
@@ -63,17 +63,23 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                     {description ? description : "Description par défaut"}
                 </p>
 
-                <div className="mt-auto pt-5">
-                    <div className="flex gap-1 my-3">
-                        <Tag
-                            title={"Ajouter un tag"}
-                            icon={<FaPlus size={12} />}
-                            onTagClick={function () { console.log('clic') }}
-                        />
+                <div className="mt-auto pt-5 flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-1 mb-1 max-h-20 overflow-y-auto">
+                        {onAddTag && (
+                            <Tag
+                                title={"Ajouter un tag"}
+                                icon={<FaPlus size={12} />}
+                                onTagClick={onAddTag}
+                            />
+                        )}
 
-                        {tags.map(tag => {
-                            return <Tag title={tag.tag} />
-                        })}
+                        {tags.map(tag => (
+                            <Tag
+                                key={tag.id_tag}
+                                title={tag.tag}
+                                onRemove={onRemoveTag ? () => onRemoveTag(tag.id_tag) : undefined}
+                            />
+                        ))}
                     </div>
                     {lien ? (
                         <a
@@ -87,6 +93,15 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                     ) : (
                         <button className="w-full rounded-xl bg-blue-400 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow active:scale-[0.98] cursor-pointer">
                             En savoir plus
+                        </button>
+                    )}
+
+                    {onResume && (
+                        <button
+                            onClick={onResume}
+                            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98] cursor-pointer"
+                        >
+                            Résumé
                         </button>
                     )}
                 </div>

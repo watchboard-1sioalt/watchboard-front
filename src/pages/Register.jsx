@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom"; 
+import { Link } from "react-router-dom";
 import { useToast } from "../components/Toast/Toast";
-import TextInput  from "../components/Inputs/TextInput"
+import TextInput from "../components/Inputs/TextInput"
 import Button from "../components/Inputs/Button";
 
 export default function Register() {
@@ -9,7 +9,7 @@ export default function Register() {
     const [prenom, setPrenom] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    
+
     const { toast } = useToast();
 
     const credentials = { nom, prenom, email, password };
@@ -21,9 +21,9 @@ export default function Register() {
             const response = await fetch("http://localhost/api/auth/register", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json", 
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify(credentials), 
+                body: JSON.stringify(credentials),
             });
 
             // 3. Lire la réponse du serveur
@@ -41,12 +41,12 @@ export default function Register() {
                 console.log("Connexion réussie !", data);
 
                 setTimeout(() => {
-                    window.location.href = "/"; 
+                    window.location.href = "/";
                 }, 3000);
 
             } else {
                 if (data.message?.includes("at least 8 characters")) {
-                    
+
                     toast.error({
                         title: "Mot de passe trop court",
                         message: "Sécurité insuffisante : votre mot de passe doit contenir au moins 8 caractères."
@@ -54,7 +54,7 @@ export default function Register() {
                     setPassword('');
 
                 } else if (data.message?.includes("The email field must be a valid email address") || data.errors?.email) {
-                    
+
                     toast.error({
                         title: "Adresse email invalide",
                         message: "Veuillez fournir une adresse email correctement configurée."
@@ -82,7 +82,7 @@ export default function Register() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
             {/* Boîte blanche identique à celle du Login */}
             <div className="flex flex-col justify-center items-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm max-w-sm w-full mx-4">
-                
+
                 {/* Header du formulaire */}
                 <div className="flex flex-col justify-center items-center mb-6">
                     <div className="text-blue-600 rounded-full bg-blue-50 p-4 mb-2">
@@ -95,41 +95,45 @@ export default function Register() {
 
                 {/* Formulaire - Ajout du onSubmit global */}
                 <form onSubmit={handleRegister} className="w-full flex flex-col gap-4">
-                    
+
                     {/* Nom et Prénom alignés horizontalement */}
                     <div className="flex gap-2">
-                        <TextInput 
+                        <TextInput
                             onChange={(e) => setNom(e.target.value)}
                             type="text"
-                            placeholder="Nom" 
-                            required  
-                                                  />
-                        <TextInput 
+                            value={nom}
+                            placeholder="Nom"
+                            required
+                        />
+                        <TextInput
                             onChange={(e) => setPrenom(e.target.value)}
                             type="text"
-                            placeholder="Prénom" 
-                            required                        />
+                            value={prenom}
+                            placeholder="Prénom"
+                            required
+                        />
                     </div>
 
-                    <TextInput 
+                    <TextInput
                         onChange={(e) => setEmail(e.target.value)}
                         type="email"
-                        placeholder="Email" 
+                        value={email}
+                        placeholder="Email"
                         required
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500 bg-gray-50/50 transition-colors"
                     />
-                    <TextInput 
+                    <TextInput
                         onChange={(e) => setPassword(e.target.value)}
                         type="password"
-                        placeholder="Mot de passe" 
                         value={password}
+                        placeholder="Mot de passe"
                         required
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500 bg-gray-50/50 transition-colors"
                     />
-                    
+
                     {/* Bouton d'inscription natif submit */}
                     <div className="pt-2">
-                        <button 
+                        <button
                             type="submit"
                             className="w-full rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-4 text-sm shadow-sm transition-colors cursor-pointer"
                         >
@@ -139,7 +143,7 @@ export default function Register() {
                 </form>
 
                 <p className="text-gray-400 text-xs mt-4">OU</p>
-                
+
                 {/* Redirections */}
                 <Link to="/Login">
                     <button className="text-sm font-medium text-blue-600 mt-2 hover:underline cursor-pointer bg-transparent border-none">
