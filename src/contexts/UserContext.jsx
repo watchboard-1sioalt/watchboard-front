@@ -43,8 +43,7 @@ export function UserProvider({ children }) {
         const expiry = getTokenExpiry(t);
         if (!expiry) return;
 
-        // Rafraîchit 60 secondes avant expiration
-        const delay = expiry - Date.now() - 60_000;
+        const delay = expiry - Date.now() - 60000 * 2;
         if (delay <= 0) return;
 
         refreshTimerRef.current = setTimeout(async () => {

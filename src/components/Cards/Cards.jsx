@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FiBookmark, FiRss } from "react-icons/fi";
 import { BsBookmarkFill } from "react-icons/bs";
 import defaultImage from "../../images/test.png";
@@ -17,6 +17,17 @@ export default function Cards({ couleur, titre, description, date, auteur, image
     }
     const [isSaved, setIsSaved] = useState(saved);
     const [saving, setSaving] = useState(false);
+    const [tagsOpen, setTagsOpen] = useState(false);
+    const tagsRef = useRef(null);
+
+    useEffect(() => {
+        if (!tagsOpen) return;
+        const handler = (e) => {
+            if (tagsRef.current && !tagsRef.current.contains(e.target)) setTagsOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [tagsOpen]);
 
     const handleSave = async () => {
         if (!onSave || saving) return;
@@ -33,7 +44,7 @@ export default function Cards({ couleur, titre, description, date, auteur, image
     };
 
     return (
-        <div className={`w-full max-w-sm rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col ${couleur ? couleur : 'bg-white'}`}>
+        <div className={`w-full rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col h-full ${couleur ? couleur : 'bg-white'}`}>
 
             <div className="w-full h-44 bg-gray-50 overflow-hidden shrink-0">
                 <img
@@ -46,12 +57,12 @@ export default function Cards({ couleur, titre, description, date, auteur, image
 
             <div className="p-5 flex flex-col flex-1">
 
-                <p className="text-xs italic text-gray-400 mb-1">
+                <p className="text-xs italic text-gray-400 mb-1 h-4 shrink-0">
                     {date || ""}
                 </p>
 
-                <div className="flex justify-between items-start gap-4">
-                    <h3 className="text-lg font-bold tracking-tight text-gray-900 sm:text-xl line-clamp-2">
+                <div className="flex justify-between items-start gap-4 h-14 shrink-0">
+                    <h3 className="text-lg font-bold tracking-tight text-gray-900 sm:text-xl line-clamp-2 overflow-hidden">
                         {titre}
                     </h3>
 
@@ -67,27 +78,50 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                     )}
                 </div>
 
-                <p className="mt-2 text-sm leading-relaxed text-gray-500 line-clamp-3">
+                <p className="mt-2 text-sm leading-relaxed text-gray-500 line-clamp-3 h-18 shrink-0 overflow-hidden">
                     {description}
                 </p>
 
                 <div className="mt-auto pt-5 flex flex-col gap-2">
-                    <div className="flex flex-wrap gap-1 mb-1 max-h-20 overflow-y-auto">
+                    <div className="flex items-center gap-1.5 mb-1" ref={tagsRef}>
+                        {/* Bouton Ajouter toujours visible */}
                         {onAddTag && (
                             <Tag
-                                title={"Ajouter un tag"}
+                                title="Ajouter"
                                 icon={<FaPlus size={12} />}
                                 onTagClick={onAddTag}
                             />
                         )}
-
-                        {tags.map(tag => (
+                        {tags.length > 0 && (
                             <Tag
-                                key={tag.id_tag}
-                                title={tag.tag}
-                                onRemove={onRemoveTag ? () => onRemoveTag(tag.id_tag) : undefined}
+                                title={tags[0].tag}
+                                onRemove={onRemoveTag ? () => onRemoveTag(tags[0].id_tag) : undefined}
                             />
-                        ))}
+                        )}
+
+                        {tags.length > 1 && (
+                            <div className="relative">
+                                <button
+                                    onClick={() => setTagsOpen(v => !v)}
+                                    className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer border border-gray-200"
+                                >
+                                    +{tags.length - 1}
+                                </button>
+
+                                {tagsOpen && (
+                                    <div className="absolute bottom-full left-0 mb-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-2 flex flex-wrap gap-1 min-w-max max-w-xs">
+                                        {tags.slice(1).map(tag => (
+                                            <Tag
+                                                key={tag.id_tag}
+                                                title={tag.tag}
+                                                onRemove={onRemoveTag ? () => onRemoveTag(tag.id_tag) : undefined}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                     </div>
                     {type && (
                         <div className="mb-2">

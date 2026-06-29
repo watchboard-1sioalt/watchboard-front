@@ -139,21 +139,22 @@ function FeedArticlesView({ feed, token, onBack }) {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {articles.map((article, i) => (
-                        <Cards
-                            key={article.id ?? article.link ?? i}
-                            titre={article.title}
-                            description={article.description || article.summary}
-                            date={
-                                article.published_at
-                                    ? new Date(article.published_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-                                    : article.pubDate || undefined
-                            }
-                            auteur={article.author}
-                            image={article.image || article.enclosure?.url || article.cover}
-                            lien={article.link || article.url}
-                            saved={!!savedMap[articleKey(article)]}
-                            onSave={(save) => handleSaveArticle(article, save)}
-                        />
+                        <div key={article.id ?? article.link ?? i} className="h-full">
+                            <Cards
+                                titre={article.title}
+                                description={article.description || article.summary}
+                                date={
+                                    article.published_at
+                                        ? new Date(article.published_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                                        : article.pubDate || undefined
+                                }
+                                auteur={article.author}
+                                image={article.image || article.enclosure?.url || article.cover}
+                                lien={article.link || article.url}
+                                saved={!!savedMap[articleKey(article)]}
+                                onSave={(save) => handleSaveArticle(article, save)}
+                            />
+                        </div>
                     ))}
                 </div>
             )}

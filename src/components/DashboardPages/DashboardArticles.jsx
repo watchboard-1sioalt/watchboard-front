@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus } from "react-icons/fi";
+import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus, FiCalendar } from "react-icons/fi";
 import Cards from "../Cards/Cards";
 import Modal from "../Modal/Modal";
 import TagPickerModal from "../Modal/TagPickerModal";
@@ -27,6 +27,7 @@ export default function DashboardArticles() {
     const [resumeTarget, setResumeTarget] = useState(null); // ressource complète
     const [resumeText, setResumeText] = useState("");
     const [savingResume, setSavingResume] = useState(false);
+    const [iaResuming, setIaResuming] = useState(false);
 
     const fetchRessources = useCallback(async () => {
         setLoading(true);
@@ -93,6 +94,31 @@ export default function DashboardArticles() {
         }
     };
 
+    const handleIaResume = async () => {
+        setIaResuming(true);
+
+        try {
+            const res = await fetch(`${API}/ressources/${resumeTarget.id_ressource}/resume/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            })
+
+            const data = await res.json();
+            if (!res.ok) throw new Error();
+            if (data?.resume) {
+                setResumeText(data?.resume)
+                setRessources(prev => prev.map(r =>
+                    r.id_ressource === resumeTarget.id_ressource ? { ...r, resume: data?.resume || resumeText } : r
+                ));
+            }
+            toast.success({ title: "Résumé généré" });
+        } catch {
+            toast.error({ title: "Erreur", message: "Impossible de généré un résumé." });
+        } finally {
+            setIaResuming(false);
+        }
+    }
+
     const handleTagRemoved = async (ressourceId, tagId) => {
         try {
             const res = await fetch(`${API}/ressources/${ressourceId}/tags/${tagId}`, {
@@ -131,6 +157,7 @@ export default function DashboardArticles() {
 
     const [selectedTagIds, setSelectedTagIds] = useState(new Set());
     const [search, setSearch] = useState("");
+    const [dateFilter, setDateFilter] = useState(null); // null | "today" | "week" | "month" | "year"
 
     const toggleTag = (id) => {
         setSelectedTagIds(prev => {
@@ -157,8 +184,18 @@ export default function DashboardArticles() {
             );
         }
 
+        if (dateFilter) {
+            const now = new Date();
+            const start = new Date();
+            if (dateFilter === "today") { start.setHours(0, 0, 0, 0); }
+            else if (dateFilter === "week") { start.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); start.setHours(0, 0, 0, 0); }
+            else if (dateFilter === "month") { start.setDate(1); start.setHours(0, 0, 0, 0); }
+            else if (dateFilter === "year") { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
+            result = result.filter(r => r.created_at && new Date(r.created_at) >= start);
+        }
+
         return result;
-    }, [ressources, selectedTagIds, search]);
+    }, [ressources, selectedTagIds, search, dateFilter]);
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -192,6 +229,30 @@ export default function DashboardArticles() {
                     />
                 </div>
             )}
+            {/* Filtre par date */}
+            {!loading && ressources.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <FiCalendar size={14} className="text-gray-400 shrink-0" />
+                    {[
+                        { id: "today", label: "Aujourd'hui" },
+                        { id: "week", label: "Cette semaine" },
+                        { id: "month", label: "Ce mois" },
+                        { id: "year", label: "Cette année" },
+                    ].map(p => (
+                        <button
+                            key={p.id}
+                            onClick={() => setDateFilter(prev => prev === p.id ? null : p.id)}
+                            className={`text-xs font-medium px-3 py-1 rounded-full border transition-colors cursor-pointer ${dateFilter === p.id
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
+                                }`}
+                        >
+                            {p.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {!loading && availableTags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 mb-6">
                     <FiFilter size={14} className="text-gray-400 shrink-0" />
@@ -234,7 +295,7 @@ export default function DashboardArticles() {
                     <FiFilter size={36} className="mx-auto mb-3 opacity-30" />
                     <p className="text-sm">Aucune ressource ne correspond à votre recherche.</p>
                     <button
-                        onClick={() => { setSelectedTagIds(new Set()); setSearch(""); }}
+                        onClick={() => { setSelectedTagIds(new Set()); setSearch(""); setDateFilter(null); }}
                         className="text-xs text-blue-500 hover:text-blue-700 mt-2 cursor-pointer underline"
                     >
                         Réinitialiser les filtres
@@ -243,7 +304,7 @@ export default function DashboardArticles() {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredRessources.map(r => (
-                        <div key={r.id_ressource} className="relative group">
+                        <div key={r.id_ressource} className="relative group h-full">
                             <Cards
                                 type={r.type}
                                 titre={r.nom_original || r.url}
@@ -297,18 +358,19 @@ export default function DashboardArticles() {
                 title={resumeTarget?.nom_original || "Résumer"}
                 actions={[
                     {
-                        label: "IA",
+                        label: "Résumé IA",
                         variant: "secondary",
                         icon: <FiZap size={14} />,
-                        onClick: () => { /* TODO faire la fonction d'appel du résumé IA*/ },
-                        disabled: true,
+                        onClick: handleIaResume,
+                        loading: iaResuming
+
                     },
                     {
                         label: "Enregistrer le résumé",
                         variant: "primary",
                         onClick: handleSaveResume,
-                        loading: savingResume,
-                        loadingLabel: "Enregistrement...",
+                        loading: (savingResume || iaResuming),
+                        loadingLabel: (savingResume ? "Enregistrement..." : iaResuming ? "Chargemenet" : ""),
                     },
                 ]}
             >

@@ -38,7 +38,7 @@ export default function Modal({ isOpen, onClose, title, items = [], actions = []
 
     const VARIANT = {
         primary: "bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50",
-        secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50",
+        secondary: "bg-gray-300 text-blue-600 hover:bg-gray-400 disabled:opacity-50",
         danger: "bg-red-600 text-white hover:bg-red-700 disabled:opacity-50",
     };
 

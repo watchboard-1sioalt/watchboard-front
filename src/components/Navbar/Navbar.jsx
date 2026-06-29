@@ -38,7 +38,6 @@ export default function Navbar() {
             <div className="flex items-center gap-4">
                 {!loading && user ? (
                     <>
-                        <SearchBarView />
                         <div className="flex items-center gap-3">
                             <span className="text-sm text-gray-600 font-medium">
                                 {user.prenom} {user.nom.toString().toUpperCase()}

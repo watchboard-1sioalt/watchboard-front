@@ -29,6 +29,8 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
     const [resume, setResume] = useState("");
     const [file, setFile] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [titleError, setTitleError] = useState(false);
+    const [fetchingTitle, setFetchingTitle] = useState(false);
 
     // Tags inline
     const [allTags, setAllTags] = useState([]);
@@ -38,6 +40,29 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
     const [creatingTag, setCreatingTag] = useState(false);
 
     const fileRef = useRef(null);
+
+    // Auto-remplissage du titre pour YouTube via oEmbed (debounce 700ms)
+    useEffect(() => {
+        if (type !== "youtube" || nom.trim()) return;
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            if (!url.trim()) return;
+            setFetchingTitle(true);
+            try {
+                const res = await fetch(
+                    `https://www.youtube.com/oembed?url=${encodeURIComponent(url.trim())}&format=json`
+                );
+                if (!res.ok || cancelled) return;
+                const data = await res.json();
+                if (!cancelled && data.title) setNom(data.title);
+            } catch {
+                // CORS possible — le backend prend le relais à la création
+            } finally {
+                if (!cancelled) setFetchingTitle(false);
+            }
+        }, 700);
+        return () => { cancelled = true; clearTimeout(timer); };
+    }, [url, type]);
 
     // Reset à chaque ouverture
     useEffect(() => {
@@ -119,22 +144,53 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
         }
     };
 
+    const fetchYoutubeTitle = async (videoUrl) => {
+        try {
+            const res = await fetch(
+                `https://www.youtube.com/oembed?url=${encodeURIComponent(videoUrl)}&format=json`
+            );
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.title ?? null;
+        } catch {
+            return null;
+        }
+    };
+
     const handleCreate = async () => {
+        setTitleError(false);
+
+        // Titre obligatoire pour tous les types sauf YouTube (auto-fetch si vide)
+        if (!nom.trim() && type !== "youtube") {
+            setTitleError(true);
+            return;
+        }
+
         setSaving(true);
         try {
             let res;
+            let finalNom = nom.trim();
 
             if (type === "file") {
                 if (!file) return;
                 const formData = new FormData();
                 formData.append("file", file);
-                formData.append("nom_original", nom || undefined);
+                if (finalNom) formData.append("nom_original", finalNom);
                 res = await fetch(`${API}/ressources/from-file`, {
                     method: "POST",
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,
                 });
             } else if (type === "youtube") {
+                // Si pas de titre, on récupère le titre via oEmbed
+                if (!finalNom) {
+                    finalNom = (await fetchYoutubeTitle(url)) ?? "";
+                }
+                if (!finalNom) {
+                    setTitleError(true);
+                    setSaving(false);
+                    return;
+                }
                 const videoId = extractYoutubeId(url);
                 const thumbnail = videoId
                     ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
@@ -142,7 +198,7 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                 res = await fetch(`${API}/ressources/from-youtube`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ url, nom_original: nom || undefined, image: thumbnail }),
+                    body: JSON.stringify({ url, nom_original: finalNom, image: thumbnail }),
                 });
             } else {
                 res = await fetch(`${API}/ressources/create`, {
@@ -150,7 +206,7 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
                     body: JSON.stringify({
                         url,
-                        nom_original: nom || undefined,
+                        nom_original: finalNom,
                         resume: resume || undefined,
                     }),
                 });
@@ -190,7 +246,9 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
         }
     };
 
-    const canSubmit = type === "file" ? !!file : !!url.trim();
+    const canSubmit = type === "file"
+        ? (!!file && !!nom.trim())
+        : (!!url.trim() && (type === "youtube" || !!nom.trim()));
 
     return (
         <div
@@ -268,16 +326,33 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                     <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-medium text-gray-700">
                             Titre
-                            <span className="text-xs text-gray-400 font-normal ml-1">(optionnel)</span>
+                            <span className="text-red-400 ml-0.5">*</span>
+                            {type === "youtube" && (
+                                <span className="text-xs text-gray-400 font-normal ml-1">(auto-récupéré si vide)</span>
+                            )}
                         </label>
-                        <input
-                            type="text"
-                            value={nom}
-                            onChange={e => setNom(e.target.value)}
-                            maxLength={150}
-                            placeholder="Nom de la ressource"
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={nom}
+                                onChange={e => { setNom(e.target.value); setTitleError(false); }}
+                                maxLength={150}
+                                placeholder={type === "youtube" ? "Récupération automatique..." : "Nom de la ressource"}
+                                className={`w-full px-3 py-2 border rounded-lg text-sm outline-none transition-colors ${titleError ? "border-red-400 focus:border-red-400" : "border-gray-200 focus:border-blue-400"} ${fetchingTitle ? "text-gray-400" : ""}`}
+                            />
+                            {fetchingTitle && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 animate-pulse">
+                                    Récupération...
+                                </span>
+                            )}
+                        </div>
+                        {titleError && (
+                            <p className="text-xs text-red-500">
+                                {type === "youtube"
+                                    ? "Impossible de récupérer le titre automatiquement, veuillez le saisir."
+                                    : "Le titre est obligatoire."}
+                            </p>
+                        )}
                     </div>
 
                     {/* Résumé */}
