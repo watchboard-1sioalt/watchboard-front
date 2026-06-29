@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus, FiCalendar } from "react-icons/fi";
+import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus, FiCalendar, FiRss, FiGlobe } from "react-icons/fi";
+import { FaYoutube } from "react-icons/fa";
+import { FaFile } from "react-icons/fa6";
 import Cards from "../Cards/Cards";
 import Modal from "../Modal/Modal";
 import TagPickerModal from "../Modal/TagPickerModal";
@@ -156,8 +158,21 @@ export default function DashboardArticles() {
     }, [ressources]);
 
     const [selectedTagIds, setSelectedTagIds] = useState(new Set());
+    const [selectedTypes, setSelectedTypes] = useState(new Set());
     const [search, setSearch] = useState("");
     const [dateFilter, setDateFilter] = useState(null); // null | "today" | "week" | "month" | "year"
+
+    const TYPE_META = {
+        rss: { label: "RSS", icon: <FiRss size={12} /> },
+        youtube: { label: "YouTube", icon: <FaYoutube size={12} /> },
+        file: { label: "Fichier", icon: <FaFile size={12} /> },
+        url: { label: "Site web", icon: <FiGlobe size={12} /> },
+    };
+
+    const availableTypes = useMemo(() => {
+        const types = new Set(ressources.map(r => r.type).filter(Boolean));
+        return [...types];
+    }, [ressources]);
 
     const toggleTag = (id) => {
         setSelectedTagIds(prev => {
@@ -167,8 +182,20 @@ export default function DashboardArticles() {
         });
     };
 
+    const toggleType = (t) => {
+        setSelectedTypes(prev => {
+            const next = new Set(prev);
+            next.has(t) ? next.delete(t) : next.add(t);
+            return next;
+        });
+    };
+
     const filteredRessources = useMemo(() => {
         let result = ressources;
+
+        if (selectedTypes.size > 0) {
+            result = result.filter(r => selectedTypes.has(r.type));
+        }
 
         if (selectedTagIds.size > 0) {
             result = result.filter(r =>
@@ -195,7 +222,7 @@ export default function DashboardArticles() {
         }
 
         return result;
-    }, [ressources, selectedTagIds, search, dateFilter]);
+    }, [ressources, selectedTagIds, selectedTypes, search, dateFilter]);
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -253,6 +280,37 @@ export default function DashboardArticles() {
                 </div>
             )}
 
+            {!loading && availableTypes.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <FiFilter size={14} className="text-gray-400 shrink-0" />
+                    {availableTypes.map(t => {
+                        const meta = TYPE_META[t] ?? { label: t, icon: null };
+                        const active = selectedTypes.has(t);
+                        return (
+                            <button
+                                key={t}
+                                onClick={() => toggleType(t)}
+                                className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full border transition-colors cursor-pointer ${active
+                                    ? "bg-blue-600 text-white border-blue-600"
+                                    : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
+                                    }`}
+                            >
+                                {meta.icon}
+                                {meta.label}
+                            </button>
+                        );
+                    })}
+                    {selectedTypes.size > 0 && (
+                        <button
+                            onClick={() => setSelectedTypes(new Set())}
+                            className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline"
+                        >
+                            Tout afficher
+                        </button>
+                    )}
+                </div>
+            )}
+
             {!loading && availableTags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 mb-6">
                     <FiFilter size={14} className="text-gray-400 shrink-0" />
@@ -295,7 +353,7 @@ export default function DashboardArticles() {
                     <FiFilter size={36} className="mx-auto mb-3 opacity-30" />
                     <p className="text-sm">Aucune ressource ne correspond à votre recherche.</p>
                     <button
-                        onClick={() => { setSelectedTagIds(new Set()); setSearch(""); setDateFilter(null); }}
+                        onClick={() => { setSelectedTagIds(new Set()); setSelectedTypes(new Set()); setSearch(""); setDateFilter(null); }}
                         className="text-xs text-blue-500 hover:text-blue-700 mt-2 cursor-pointer underline"
                     >
                         Réinitialiser les filtres

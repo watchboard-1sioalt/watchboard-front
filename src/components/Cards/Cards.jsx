@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { FiBookmark, FiRss } from "react-icons/fi";
+import { useState } from "react";
+import { FiBookmark, FiRss, FiGlobe, FiImage } from "react-icons/fi";
 import { BsBookmarkFill } from "react-icons/bs";
 import defaultImage from "../../images/test.png";
 import Tag from "../Tag";
@@ -7,27 +7,9 @@ import { FaLink, FaPlus, FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
 
 export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, onSave, onAddTag, onRemoveTag, onResume, type }) {
-    let imgSrc;
-    if (image) imgSrc = image;
-    else {
-        if (type === "file") imgSrc = defaultImage;
-        else if (type === "youtube") imgSrc = defaultImage;
-        else if (type === "url") imgSrc = defaultImage;
-        else imgSrc = defaultImage
-    }
     const [isSaved, setIsSaved] = useState(saved);
     const [saving, setSaving] = useState(false);
     const [tagsOpen, setTagsOpen] = useState(false);
-    const tagsRef = useRef(null);
-
-    useEffect(() => {
-        if (!tagsOpen) return;
-        const handler = (e) => {
-            if (tagsRef.current && !tagsRef.current.contains(e.target)) setTagsOpen(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, [tagsOpen]);
 
     const handleSave = async () => {
         if (!onSave || saving) return;
@@ -44,15 +26,36 @@ export default function Cards({ couleur, titre, description, date, auteur, image
     };
 
     return (
-        <div className={`w-full rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col h-full ${couleur ? couleur : 'bg-white'}`}>
+        <div className={`w-full rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col h-full ${couleur ? couleur : 'bg-white'}`}>
 
-            <div className="w-full h-44 bg-gray-50 overflow-hidden shrink-0">
-                <img
-                    src={imgSrc}
-                    alt="Illustration"
-                    className="w-full h-full object-cover"
-                    onError={e => { e.currentTarget.src = defaultImage; }}
-                />
+            <div className="w-full h-44 bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center rounded-t-2xl">
+                {image ? (
+                    <img
+                        src={image}
+                        alt="Illustration"
+                        className="w-full h-full object-cover"
+                        onError={e => { e.currentTarget.src = defaultImage; }}
+                    />
+                ) : type === "url" ? (
+                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                        <FiGlobe size={48} strokeWidth={1} />
+                    </div>
+                ) : type === "file" ? (
+                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                        <FaFile size={44} />
+                    </div>
+                ) : type === "rss" ? (
+                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                        <FiImage size={48} strokeWidth={1} />
+                        <span className="text-xs font-medium text-gray-400">No image</span>
+                    </div>
+                ) : (
+                    <img
+                        src={defaultImage}
+                        alt="Illustration"
+                        className="w-full h-full object-cover"
+                    />
+                )}
             </div>
 
             <div className="p-5 flex flex-col flex-1">
@@ -83,8 +86,7 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                 </p>
 
                 <div className="mt-auto pt-5 flex flex-col gap-2">
-                    <div className="flex items-center gap-1.5 mb-1" ref={tagsRef}>
-                        {/* Bouton Ajouter toujours visible */}
+                    <div className="flex flex-wrap items-center gap-1.5 mb-1">
                         {onAddTag && (
                             <Tag
                                 title="Ajouter"
@@ -92,36 +94,39 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                                 onTagClick={onAddTag}
                             />
                         )}
-                        {tags.length > 0 && (
-                            <Tag
-                                title={tags[0].tag}
-                                onRemove={onRemoveTag ? () => onRemoveTag(tags[0].id_tag) : undefined}
-                            />
-                        )}
-
-                        {tags.length > 1 && (
-                            <div className="relative">
-                                <button
-                                    onClick={() => setTagsOpen(v => !v)}
-                                    className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer border border-gray-200"
-                                >
-                                    +{tags.length - 1}
-                                </button>
-
-                                {tagsOpen && (
-                                    <div className="absolute bottom-full left-0 mb-1 z-20 bg-white border border-gray-200 rounded-xl shadow-lg p-2 flex flex-wrap gap-1 min-w-max max-w-xs">
-                                        {tags.slice(1).map(tag => (
-                                            <Tag
-                                                key={tag.id_tag}
-                                                title={tag.tag}
-                                                onRemove={onRemoveTag ? () => onRemoveTag(tag.id_tag) : undefined}
-                                            />
-                                        ))}
-                                    </div>
+                        {tagsOpen
+                            ? tags.map(tag => (
+                                <Tag
+                                    key={tag.id_tag}
+                                    title={tag.tag}
+                                    onRemove={onRemoveTag ? () => onRemoveTag(tag.id_tag) : undefined}
+                                />
+                            ))
+                            : <>
+                                {tags.length > 0 && (
+                                    <Tag
+                                        title={tags[0].tag}
+                                        onRemove={onRemoveTag ? () => onRemoveTag(tags[0].id_tag) : undefined}
+                                    />
                                 )}
-                            </div>
+                                {tags.length > 1 && (
+                                    <button
+                                        onClick={() => setTagsOpen(true)}
+                                        className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer border border-gray-200"
+                                    >
+                                        +{tags.length - 1}
+                                    </button>
+                                )}
+                            </>
+                        }
+                        {tagsOpen && tags.length > 1 && (
+                            <button
+                                onClick={() => setTagsOpen(false)}
+                                className="flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer border border-gray-200"
+                            >
+                                Moins
+                            </button>
                         )}
-
                     </div>
                     {type && (
                         <div className="mb-2">
@@ -138,7 +143,9 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                                 title={
                                     type === "rss" ? "RSS" :
                                         (type === "youtube" ? "Youtube" :
-                                            (type === "file" ? "Fichier" : "")
+                                            (type === "file" ? "Fichier" :
+                                                (type === "url" ? "Site web" : "")
+                                            )
                                         )
                                 }
                             />

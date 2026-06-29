@@ -31,6 +31,7 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
     const [saving, setSaving] = useState(false);
     const [titleError, setTitleError] = useState(false);
     const [fetchingTitle, setFetchingTitle] = useState(false);
+    const [previewThumbnail, setPreviewThumbnail] = useState(null);
 
     // Tags inline
     const [allTags, setAllTags] = useState([]);
@@ -41,12 +42,12 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
 
     const fileRef = useRef(null);
 
-    // Auto-remplissage du titre pour YouTube via oEmbed (debounce 700ms)
+    // Auto-remplissage du titre + thumbnail pour YouTube via oEmbed (debounce 700ms)
     useEffect(() => {
-        if (type !== "youtube" || nom.trim()) return;
+        if (type !== "youtube") return;
+        if (!url.trim()) { setPreviewThumbnail(null); return; }
         let cancelled = false;
         const timer = setTimeout(async () => {
-            if (!url.trim()) return;
             setFetchingTitle(true);
             try {
                 const res = await fetch(
@@ -54,7 +55,9 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                 );
                 if (!res.ok || cancelled) return;
                 const data = await res.json();
-                if (!cancelled && data.title) setNom(data.title);
+                if (cancelled) return;
+                if (data.title && !nom.trim()) setNom(data.title);
+                if (data.thumbnail_url) setPreviewThumbnail(data.thumbnail_url);
             } catch {
                 // CORS possible — le backend prend le relais à la création
             } finally {
@@ -74,6 +77,7 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
         setFile(null);
         setSelectedTags([]);
         setTagSearch("");
+        setPreviewThumbnail(null);
         if (fileRef.current) fileRef.current.value = "";
 
         setLoadingTags(true);
@@ -281,8 +285,8 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                                 key={t.id}
                                 onClick={() => setType(t.id)}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${type === t.id
-                                        ? "bg-blue-600 text-white border-blue-600"
-                                        : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
+                                    ? "bg-blue-600 text-white border-blue-600"
+                                    : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
                                     }`}
                             >
                                 {t.icon}
@@ -303,7 +307,7 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                                 type="file"
                                 accept=".txt,.md,.pdf"
                                 onChange={e => setFile(e.target.files?.[0] ?? null)}
-                                className="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 cursor-pointer"
+                                className="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 cursor-pointer file:cursor-pointer"
                             />
                         </div>
                     ) : (
@@ -319,6 +323,15 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                                 placeholder={type === "youtube" ? "https://youtube.com/watch?v=..." : "https://exemple.com/article"}
                                 className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
                             />
+                            {type === "youtube" && previewThumbnail && (
+                                <div className="mt-2 rounded-lg overflow-hidden border border-gray-100 bg-gray-50 h-36">
+                                    <img
+                                        src={previewThumbnail}
+                                        alt="Aperçu"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 
