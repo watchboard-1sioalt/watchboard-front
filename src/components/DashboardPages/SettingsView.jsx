@@ -2,10 +2,13 @@ import { useState } from "react";
 import TextInput from "../Inputs/TextInput";
 import Button from "../Inputs/Button";
 import { useUser } from "../../contexts/UserContext";
+import { useToast } from '../Toast/Toast';
 import { FiSettings } from "react-icons/fi";
 
+const API = "http://localhost/api";
+
 // 1. Sous-composant pour les sections simples (Mail, Mot de passe) - AGGRANDI
-function SettingsSection({ label, value, type = "text", onSave }) {
+function SettingsSection({ label, value, type = "text", onSave, disabled = false }) {
     const [isOpen, setIsOpen] = useState(false);
     const [inputValue, setInputValue] = useState(value);
 
@@ -25,6 +28,7 @@ function SettingsSection({ label, value, type = "text", onSave }) {
                     title={isOpen ? "Annuler" : "Modifier"}
                     style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
+                    disabled={disabled}
                     onClick={() => setIsOpen(!isOpen)}
                 />
             </div>
@@ -102,16 +106,116 @@ function IdentitySection({ nomInitial, prenomInitial, onSave }) {
     );
 }
 
+function PasswordSection({ token }) {
+    const { toast } = useToast();
+    const [isOpen, setIsOpen] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [saving, setSaving] = useState(false);
+
+    const handleCancel = () => {
+        setIsOpen(false);
+        setCurrentPassword("");
+        setNewPassword("");
+    };
+
+    const handleSave = async () => {
+        if (!currentPassword || !newPassword) return;
+        setSaving(true);
+        try {
+            const res = await fetch(`${API}/auth/password`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    new_password_confirmation: newPassword,
+                }),
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                const message = data?.message ?? "Erreur lors du changement de mot de passe.";
+                toast.error({ title: "Erreur", message });
+            } else {
+                toast.success({ title: "Mot de passe mis à jour" });
+                handleCancel();
+            }
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col gap-3 p-6 border-b border-gray-100 w-full">
+            <div className="flex items-center justify-between w-full">
+                <div>
+                    <span className="text-gray-500 text-sm block font-medium mb-1">Mot de passe</span>
+                    <span className="text-lg font-semibold text-gray-800">••••••••</span>
+                </div>
+                <Button
+                    title={isOpen ? "Annuler" : "Modifier"}
+                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    onClick={isOpen ? handleCancel : () => setIsOpen(true)}
+                />
+            </div>
+
+            {isOpen && (
+                <div className="flex flex-col gap-4 mt-3 p-4 bg-gray-50 rounded-xl w-full border border-gray-100">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1">
+                            <label className="text-xs font-medium text-gray-500 block mb-1">Mot de passe actuel</label>
+                            <TextInput
+                                type="password"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-xs font-medium text-gray-500 block mb-1">Nouveau mot de passe</label>
+                            <TextInput
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end">
+                        <Button
+                            title={saving ? "Enregistrement..." : "Valider"}
+                            style="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-sm hover:bg-blue-700 w-full md:w-auto disabled:opacity-50"
+                            onClick={handleSave}
+                            disabled={saving || !currentPassword || !newPassword}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // 3. Composant principal - CENTRÉ ET ÉLARGI
 export default function SettingsView() {
-    const { user } = useUser();
+    const { toast } = useToast();
+    const { user, token } = useUser();
     const [email, setEmail] = useState(user?.email || "");
     const [nom, setNom] = useState(user?.nom || "");
     const [prenom, setPrenom] = useState(user?.prenom || "");
 
-    const handleSaveIdentity = (identityData) => {
-        setNom(identityData.nom);
-        setPrenom(identityData.prenom);
+    const handleSaveIdentity = async (identityData) => {
+        const res = await fetch(`${API}/auth/me`, {
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            method: 'PUT',
+            body: JSON.stringify({ nom: identityData.nom, prenom: identityData.prenom })
+        });
+        if (!res.ok) {
+            toast.error({ title: "Une erreur est survenue", message: "Erreur lors de la mise à jour de votre compte" });
+        } else {
+            setNom(identityData.nom);
+            setPrenom(identityData.prenom);
+            toast.success({ title: "Compte mis à jour" });
+        }
     };
 
     return (
@@ -130,7 +234,7 @@ export default function SettingsView() {
                         label="Votre mail"
                         value={email}
                         type="email"
-                        onSave={(newEmail) => setEmail(newEmail)}
+                        disabled={true}
                     />
 
                     <IdentitySection
@@ -139,13 +243,7 @@ export default function SettingsView() {
                         onSave={handleSaveIdentity}
                     />
 
-                    <SettingsSection
-                        label="Mot de passe"
-                        value="••••••••"
-                        type="password"
-                        onSave={(newPassword) => console.log("Nouveau MDP :", newPassword)}
-                    />
-
+                    <PasswordSection token={token} />
                 </div>
             </div>
             <div className="mt-5 h-0.5 w-full bg-gray-200" />

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter } from "react-icons/fi";
+import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus } from "react-icons/fi";
 import Cards from "../Cards/Cards";
 import Modal from "../Modal/Modal";
 import TagPickerModal from "../Modal/TagPickerModal";
+import CreateRessourceModal from "../Modal/CreateRessourceModal";
 import SearchBarView from "../SearchBarView";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
@@ -16,6 +17,8 @@ export default function DashboardArticles() {
     const [ressources, setRessources] = useState([]);
     const [loading, setLoading] = useState(true);
     const [confirmDelete, setConfirmDelete] = useState(null);
+
+    const [createModal, setCreateModal] = useState(false);
 
     const [tagModal, setTagModal] = useState(false);
     const [tagTarget, setTagTarget] = useState(null);
@@ -164,11 +167,20 @@ export default function DashboardArticles() {
                     <FiBookmark className="text-blue-600" size={22} />
                     <h1 className="text-2xl font-semibold text-blue-600">Ressources enregistrées</h1>
                 </div>
-                {!loading && ressources.length > 0 && (
-                    <span className="text-sm text-gray-400">
-                        {ressources.length} ressource{ressources.length > 1 ? "s" : ""}
-                    </span>
-                )}
+                <div className="flex items-center gap-3">
+                    {!loading && ressources.length > 0 && (
+                        <span className="text-sm text-gray-400">
+                            {ressources.length} ressource{ressources.length > 1 ? "s" : ""}
+                        </span>
+                    )}
+                    <button
+                        onClick={() => setCreateModal(true)}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
+                    >
+                        <FiPlus size={16} />
+                        Ajouter
+                    </button>
+                </div>
             </div>
             {!loading && ressources.length > 0 && (
                 <div className="mb-4">
@@ -233,6 +245,7 @@ export default function DashboardArticles() {
                     {filteredRessources.map(r => (
                         <div key={r.id_ressource} className="relative group">
                             <Cards
+                                type={r.type}
                                 titre={r.nom_original || r.url}
                                 description={r.resume}
                                 lien={r.url}
@@ -322,6 +335,16 @@ export default function DashboardArticles() {
                     if (!res.ok) throw new Error();
                 }}
                 onTagAdded={handleTagAdded}
+            />
+
+            <CreateRessourceModal
+                isOpen={createModal}
+                onClose={() => setCreateModal(false)}
+                token={token}
+                onCreated={(newRessource) => {
+                    setRessources(prev => [newRessource, ...prev]);
+                    toast.success({ title: "Ressource ajoutée" });
+                }}
             />
         </div>
     );

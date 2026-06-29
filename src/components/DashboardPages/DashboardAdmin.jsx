@@ -37,7 +37,6 @@ export default function DashboardAdmin() {
                         </LineChart>
                     </ResponsiveContainer>
                 </div>
-
             </div>
             <div className="w-170 max-w rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md bg-gray-100}> ">
                 <h3 className="text-center">Verifications en attente</h3>
