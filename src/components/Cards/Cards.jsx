@@ -1,12 +1,20 @@
 import { useState } from "react";
-import { FiBookmark } from "react-icons/fi";
+import { FiBookmark, FiRss } from "react-icons/fi";
 import { BsBookmarkFill } from "react-icons/bs";
 import defaultImage from "../../images/test.png";
 import Tag from "../Tag";
-import { FaPlus } from "react-icons/fa";
+import { FaLink, FaPlus, FaYoutube } from "react-icons/fa";
+import { FaFile } from "react-icons/fa6";
 
-export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, onSave, onAddTag, onRemoveTag, onResume }) {
-    const imgSrc = image || defaultImage;
+export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, onSave, onAddTag, onRemoveTag, onResume, type }) {
+    let imgSrc;
+    if (image) imgSrc = image;
+    else {
+        if (type === "file") imgSrc = defaultImage;
+        else if (type === "youtube") imgSrc = defaultImage;
+        else if (type === "url") imgSrc = defaultImage;
+        else imgSrc = defaultImage
+    }
     const [isSaved, setIsSaved] = useState(saved);
     const [saving, setSaving] = useState(false);
 
@@ -27,11 +35,11 @@ export default function Cards({ couleur, titre, description, date, auteur, image
     return (
         <div className={`w-full max-w-sm rounded-2xl border border-gray-100 overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col ${couleur ? couleur : 'bg-white'}`}>
 
-            <div className="w-full bg-gray-50 flex items-center justify-center">
+            <div className="w-full h-44 bg-gray-50 overflow-hidden shrink-0">
                 <img
                     src={imgSrc}
                     alt="Illustration"
-                    className="w-full object-contain"
+                    className="w-full h-full object-cover"
                     onError={e => { e.currentTarget.src = defaultImage; }}
                 />
             </div>
@@ -43,8 +51,8 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                 </p>
 
                 <div className="flex justify-between items-start gap-4">
-                    <h3 className="text-lg font-bold tracking-tight text-gray-900 sm:text-xl">
-                        {titre ? titre : "Titre par défaut"}
+                    <h3 className="text-lg font-bold tracking-tight text-gray-900 sm:text-xl line-clamp-2">
+                        {titre}
                     </h3>
 
                     {onSave && (
@@ -59,8 +67,8 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                     )}
                 </div>
 
-                <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                    {description ? description : "Description par défaut"}
+                <p className="mt-2 text-sm leading-relaxed text-gray-500 line-clamp-3">
+                    {description}
                 </p>
 
                 <div className="mt-auto pt-5 flex flex-col gap-2">
@@ -81,6 +89,27 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                             />
                         ))}
                     </div>
+                    {type && (
+                        <div className="mb-2">
+                            <Tag
+                                key={"r_type"}
+                                icon={
+                                    type === "rss" ? <FiRss /> :
+                                        (type === "youtube" ? <FaYoutube /> :
+                                            (type === "file" ? <FaFile /> :
+                                                (type === "url" ? <FaLink /> : "")
+                                            )
+                                        )
+                                }
+                                title={
+                                    type === "rss" ? "RSS" :
+                                        (type === "youtube" ? "Youtube" :
+                                            (type === "file" ? "Fichier" : "")
+                                        )
+                                }
+                            />
+                        </div>
+                    )}
                     {lien ? (
                         <a
                             href={lien}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FiRss, FiPlus, FiTrash2, FiEdit2, FiCheck, FiX, FiExternalLink, FiArrowLeft, FiRefreshCw, FiTag } from "react-icons/fi";
+import { FiRss, FiPlus, FiTrash2, FiEdit2, FiCheck, FiX, FiExternalLink, FiArrowLeft, FiRefreshCw, FiTag, FiGlobe } from "react-icons/fi";
+import { FaYoutube } from "react-icons/fa";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import Tag from "../Tag";
@@ -90,6 +91,8 @@ function FeedArticlesView({ feed, token, onBack }) {
                             className="w-7 h-7 rounded object-cover shrink-0"
                             onError={e => { e.currentTarget.style.display = "none"; }}
                         />
+                    ) : feed.url.includes("youtube") ? (
+                        <FaYoutube className="text-red-600 shrink-0" size={18} />
                     ) : (
                         <FiRss className="text-blue-600 shrink-0" size={18} />
                     )}
@@ -167,6 +170,7 @@ export default function DashboardFlux() {
     const [selectedFeed, setSelectedFeed] = useState(null);
 
     const [showAddForm, setShowAddForm] = useState(false);
+    const [newType, setNewType] = useState("rss"); // "rss" | "youtube"
     const [newUrl, setNewUrl] = useState("");
     const [newName, setNewName] = useState("");
     const [adding, setAdding] = useState(false);
@@ -256,6 +260,7 @@ export default function DashboardFlux() {
             setFeeds(prev => [data, ...prev]);
             setNewUrl("");
             setNewName("");
+            setNewType("rss");
             setShowAddForm(false);
             toast.success({ title: "Flux ajouté", message: "Votre flux a été ajouté avec succès." });
         } catch (err) {
@@ -392,13 +397,34 @@ export default function DashboardFlux() {
 
             {showAddForm && (
                 <form onSubmit={handleAdd} className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col gap-3">
-                    <h2 className="text-sm font-semibold text-blue-800">Nouveau flux RSS</h2>
+                    <h2 className="text-sm font-semibold text-blue-800">Nouveau flux</h2>
+
+                    {/* Sélecteur de type */}
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => { setNewType("rss"); setNewUrl(""); }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${newType === "rss" ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"}`}
+                        >
+                            <FiGlobe size={14} /> Flux RSS
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setNewType("youtube"); setNewUrl(""); }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${newType === "youtube" ? "bg-red-500 text-white border-red-500" : "bg-white text-gray-600 border-gray-200 hover:border-red-400 hover:text-red-500"}`}
+                        >
+                            <FaYoutube size={15} /> Chaîne YouTube
+                        </button>
+                    </div>
+
                     <div className="flex flex-col sm:flex-row gap-3">
                         <input
                             type="url"
                             value={newUrl}
                             onChange={e => setNewUrl(e.target.value)}
-                            placeholder="URL du flux (ex: https://exemple.com/feed.xml)"
+                            placeholder={newType === "youtube"
+                                ? "https://www.youtube.com/@nomdelachaine"
+                                : "https://exemple.com/feed.xml"}
                             required
                             className="flex-1 px-3 py-2 border border-blue-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
                         />
@@ -411,10 +437,17 @@ export default function DashboardFlux() {
                             className="sm:w-56 px-3 py-2 border border-blue-200 rounded-lg text-sm outline-none focus:border-blue-400 bg-white"
                         />
                     </div>
+
+                    {newType === "youtube" && (
+                        <p className="text-xs text-blue-600 opacity-70">
+                            Formats acceptés : youtube.com/@handle, youtube.com/channel/UC…, youtube.com/c/nom
+                        </p>
+                    )}
+
                     <div className="flex gap-2 justify-end">
                         <button
                             type="button"
-                            onClick={() => { setShowAddForm(false); setNewUrl(""); setNewName(""); }}
+                            onClick={() => { setShowAddForm(false); setNewUrl(""); setNewName(""); setNewType("rss"); }}
                             className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 cursor-pointer"
                         >
                             Annuler
@@ -498,8 +531,12 @@ export default function DashboardFlux() {
                                                     className="w-6 h-6 rounded object-cover shrink-0"
                                                     onError={e => { e.currentTarget.style.display = "none"; }}
                                                 />
+                                            ) : feed.url.includes("youtube") ? (
+
+                                                <FaYoutube className="text-red-600 shrink-0" size={18} />
                                             ) : (
-                                                <FiRss size={14} className="text-blue-400 shrink-0" />
+
+                                                <FiRss className="text-blue-600 shrink-0" size={18} />
                                             )}
                                             <button
                                                 onClick={() => setSelectedFeed(feed)}

@@ -107,7 +107,7 @@ export function UserProvider({ children }) {
             await fetch(`${API}/auth/logout`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
-            }).catch(() => {});
+            }).catch(() => { });
         }
         clearToken();
     };
