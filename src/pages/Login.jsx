@@ -26,8 +26,8 @@ export default function Login() {
             await login(email, password);
             navigate(from, { replace: true });
             toast.success({
-                title: "Inscription réussie !",
-                message: "Redirection vers la page de connexion"
+                title: "Connexion réussie !",
+                message: "Redirection vers le dashboard."
             });
             console.log("Connexion réussie !", data);
         } catch (err) {
