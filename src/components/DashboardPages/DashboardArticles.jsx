@@ -4,6 +4,7 @@ import { FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
 import Cards from "../Cards/Cards";
 import Modal from "../Modal/Modal";
+import FileViewer from "../FileViewer/FileViewer";
 import TagPickerModal from "../Modal/TagPickerModal";
 import CreateRessourceModal from "../Modal/CreateRessourceModal";
 import SearchBarView from "../SearchBarView";
@@ -119,6 +120,14 @@ export default function DashboardArticles() {
             setIaResuming(false);
         }
     }
+
+    const [fileViewerOpen, setFileViewerOpen] = useState(false);
+    const [fileViewerTarget, setFileViewerTarget] = useState(null);
+
+    const openFileViewer = (r) => {
+        setFileViewerTarget(r);
+        setFileViewerOpen(true);
+    };
 
     const [shareModal, setShareModal] = useState(false);
     const [shareTarget, setShareTarget] = useState(null);
@@ -409,7 +418,7 @@ export default function DashboardArticles() {
                                 type={r.type}
                                 titre={r.nom_original || r.url}
                                 description={r.resume}
-                                lien={r.url}
+                                lien={r.type === "file" ? null : r.url}
                                 image={r.image}
                                 date={r.created_at
                                     ? new Date(r.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
@@ -418,6 +427,7 @@ export default function DashboardArticles() {
                                 onAddTag={() => openTagModal(r.id_ressource)}
                                 onRemoveTag={(tagId) => handleTagRemoved(r.id_ressource, tagId)}
                                 onResume={() => openResumeModal(r)}
+                                onFileOpen={r.type === "file" ? () => openFileViewer(r) : undefined}
                             />
 
                             <div className="absolute top-3 right-3 flex items-center gap-1">
@@ -541,6 +551,12 @@ export default function DashboardArticles() {
                     setRessources(prev => [newRessource, ...prev]);
                     toast.success({ title: "Ressource ajoutée" });
                 }}
+            />
+
+            <FileViewer
+                isOpen={fileViewerOpen}
+                onClose={() => setFileViewerOpen(false)}
+                ressource={fileViewerTarget}
             />
         </div>
     );

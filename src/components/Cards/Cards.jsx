@@ -7,7 +7,7 @@ import { FaFile } from "react-icons/fa6";
 import { IoIosSend } from "react-icons/io";
 import SaveButton from "../Inputs/SaveButton";
 
-export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, canShare = false, onSave, onAddTag, onRemoveTag, onResume, onShare, type }) {
+export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, canShare = false, onSave, onAddTag, onRemoveTag, onResume, onShare, onFileOpen, type }) {
     const [tagsOpen, setTagsOpen] = useState(false);
 
     return (
@@ -129,7 +129,14 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                             />
                         </div>
                     )}
-                    {lien ? (
+                    {type === "file" && onFileOpen ? (
+                        <button
+                            onClick={onFileOpen}
+                            className="w-full rounded-xl bg-blue-400 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-blue-700 hover:shadow active:scale-[0.98] cursor-pointer"
+                        >
+                            En savoir plus
+                        </button>
+                    ) : lien ? (
                         <a
                             href={lien}
                             target="_blank"
