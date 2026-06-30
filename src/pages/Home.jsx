@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SideBarView, { menuItems } from "../components/SideBar";
 import { useUser } from "../contexts/UserContext";
 
@@ -7,6 +7,8 @@ export default function Home() {
     const [activeTab, setActiveTab] = useState("Tableau de bord");
 
     const activeItem = menuItems.find((item) => item.name === activeTab);
+
+    useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [activeTab]);
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50/50">

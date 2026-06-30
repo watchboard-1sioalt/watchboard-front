@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus, FiCalendar, FiRss, FiGlobe } from "react-icons/fi";
+import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus, FiCalendar, FiRss, FiGlobe, FiShare2 } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
 import Cards from "../Cards/Cards";
@@ -121,6 +121,37 @@ export default function DashboardArticles() {
         }
     }
 
+    const [shareModal, setShareModal] = useState(false);
+    const [shareTarget, setShareTarget] = useState(null);
+    const [shareEmail, setShareEmail] = useState("");
+    const [sharing, setSharing] = useState(false);
+
+    const openShareModal = (r) => {
+        setShareTarget(r);
+        setShareEmail("");
+        setShareModal(true);
+    };
+
+    const handleShare = async () => {
+        if (!shareEmail.trim()) return;
+        setSharing(true);
+        try {
+            const res = await fetch(`${API}/ressources/${shareTarget.id_ressource}/share`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ email: shareEmail.trim() }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || "Erreur");
+            toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
+            setShareModal(false);
+        } catch (err) {
+            toast.error({ title: "Erreur", message: err.message || "Impossible de partager la ressource." });
+        } finally {
+            setSharing(false);
+        }
+    };
+
     const handleTagRemoved = async (ressourceId, tagId) => {
         try {
             const res = await fetch(`${API}/ressources/${ressourceId}/tags/${tagId}`, {
@@ -150,12 +181,22 @@ export default function DashboardArticles() {
 
     const getTags = (r) => r.tags ?? r.tag ?? [];
 
-    // Tags uniques présents dans toutes les ressources
+    const [allTags, setAllTags] = useState([]);
+
+    useEffect(() => {
+        fetch(`${API}/tags/list`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : [])
+            .then(data => setAllTags(Array.isArray(data) ? data : []))
+            .catch(() => { });
+    }, [token]);
+
+    // Tags publics + tags déjà sur les ressources (dédupliqués)
     const availableTags = useMemo(() => {
         const map = new Map();
+        allTags.forEach(t => map.set(t.id_tag, t));
         ressources.forEach(r => getTags(r).forEach(t => map.set(t.id_tag, t)));
         return [...map.values()];
-    }, [ressources]);
+    }, [allTags, ressources]);
 
     const [selectedTagIds, setSelectedTagIds] = useState(new Set());
     const [selectedTypes, setSelectedTypes] = useState(new Set());
@@ -220,6 +261,8 @@ export default function DashboardArticles() {
             else if (dateFilter === "year") { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
             result = result.filter(r => r.created_at && new Date(r.created_at) >= start);
         }
+
+        result = [...result].sort((a, b) => new Date(b.created_at ?? 0) - new Date(a.created_at ?? 0));
 
         return result;
     }, [ressources, selectedTagIds, selectedTypes, search, dateFilter]);
@@ -378,10 +421,17 @@ export default function DashboardArticles() {
                                 onResume={() => openResumeModal(r)}
                             />
 
-                            <div className="absolute top-3 right-3">
+                            <div className="absolute top-3 right-3 flex items-center gap-1">
+                                <button
+                                    onClick={() => openShareModal(r)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-blue-500 cursor-pointer"
+                                    title="Partager"
+                                >
+                                    <FiShare2 size={14} />
+                                </button>
                                 {confirmDelete === r.id_ressource ? (
                                     <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-sm">
-                                        <span className="text-xs text-gray-500">Voulez-vous vraiment supprimer ?</span>
+                                        <span className="text-xs text-gray-500">Supprimer ?</span>
                                         <button
                                             onClick={() => handleDelete(r.id_ressource)}
                                             className="text-blue-600 hover:text-red-600 cursor-pointer"
@@ -439,6 +489,33 @@ export default function DashboardArticles() {
                     rows={6}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 resize-none transition-colors"
                 />
+            </Modal>
+
+            <Modal
+                isOpen={shareModal}
+                onClose={() => setShareModal(false)}
+                title={`Partager « ${shareTarget?.nom_original || shareTarget?.url || ""} »`}
+                actions={[
+                    {
+                        label: sharing ? "Envoi..." : "Partager",
+                        variant: "primary",
+                        onClick: handleShare,
+                        loading: sharing,
+                    },
+                ]}
+            >
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-gray-700">Adresse e-mail du destinataire</label>
+                    <input
+                        type="email"
+                        value={shareEmail}
+                        onChange={e => setShareEmail(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleShare()}
+                        placeholder="utilisateur@exemple.com"
+                        autoFocus
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors"
+                    />
+                </div>
             </Modal>
 
             <TagPickerModal

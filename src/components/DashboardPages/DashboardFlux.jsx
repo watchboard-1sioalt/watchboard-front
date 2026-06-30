@@ -14,13 +14,12 @@ function FeedArticlesView({ feed, token, onBack }) {
     const { toast } = useToast();
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
-    // articleKey -> ressourceId pour pouvoir supprimer après enregistrement
+    // url -> id_ressource pour les articles déjà enregistrés ou enregistrés dans la session
     const [savedMap, setSavedMap] = useState({});
 
     const articleKey = (article) => article.link || article.url || article.id;
 
     const handleSaveArticle = useCallback(async (article, save) => {
-        console.log(article)
         const key = articleKey(article);
         if (save) {
             const res = await fetch(`${API}/ressources/from-rss`, {
@@ -39,7 +38,7 @@ function FeedArticlesView({ feed, token, onBack }) {
                 throw new Error(err.message || "Erreur lors de l'enregistrement");
             }
             const ressource = await res.json();
-            setSavedMap(prev => ({ ...prev, [key]: ressource.id }));
+            setSavedMap(prev => ({ ...prev, [key]: ressource.id_ressource }));
             toast.success({ title: "Article enregistré" });
         } else {
             const ressourceId = savedMap[key];
@@ -70,7 +69,18 @@ function FeedArticlesView({ feed, token, onBack }) {
         }
     }, [feed.id_fluxrss, token]);
 
-    useEffect(() => { fetchArticles(); }, [fetchArticles]);
+    useEffect(() => {
+        fetchArticles();
+        fetch(`${API}/ressources`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : [])
+            .then(data => {
+                const list = Array.isArray(data) ? data : data.data ?? [];
+                const map = {};
+                list.forEach(r => { if (r.url) map[r.url] = r.id_ressource; });
+                setSavedMap(map);
+            })
+            .catch(() => { });
+    }, [fetchArticles, token]);
 
     return (
         <div className="max-w-5xl mx-auto">
@@ -207,11 +217,21 @@ export default function DashboardFlux() {
 
     useEffect(() => { fetchFeeds(); }, [fetchFeeds]);
 
+    const [allTags, setAllTags] = useState([]);
+
+    useEffect(() => {
+        fetch(`${API}/tags/list`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : [])
+            .then(data => setAllTags(Array.isArray(data) ? data : []))
+            .catch(() => {});
+    }, [token]);
+
     const availableTags = useMemo(() => {
         const map = new Map();
+        allTags.forEach(t => map.set(t.id_tag, t));
         feeds.forEach(f => (f.tags ?? []).forEach(t => map.set(t.id_tag, t)));
         return [...map.values()];
-    }, [feeds]);
+    }, [allTags, feeds]);
 
     const filteredFeeds = useMemo(() => {
         let result = feeds;
@@ -594,7 +614,7 @@ export default function DashboardFlux() {
 
                                     {confirmDelete === feed.id_fluxrss ? (
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-500 whitespace-nowrap">Confirmer ?</span>
+                                            <span className="text-xs text-gray-500 whitespace-nowrap">Confirmer la suppression ?</span>
                                             <button
                                                 onClick={() => handleDelete(feed.id_fluxrss)}
                                                 className="text-red-600 hover:text-red-700 cursor-pointer"

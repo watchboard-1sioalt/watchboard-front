@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "../../assets/logo.png";
 import { useUser } from "../../contexts/UserContext";
-import SearchBarView from "../SearchBarView";
 import { FiLogOut } from "react-icons/fi";
 import { useToast } from "../Toast/Toast";
+import NotificationBell from "./NotificationBell";
 
 
 
@@ -39,18 +39,15 @@ export default function Navbar() {
                 {!loading && user ? (
                     <>
                         <div className="flex items-center gap-3">
+                            <NotificationBell />
                             <span className="text-sm text-gray-600 font-medium">
                                 {user.prenom} {user.nom.toString().toUpperCase()}
                             </span>
                             <button
-                                onClick={handleLogout
-
-                                }
-
-                                className="text-sm text-gray-400 text-red-400 hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none"
+                                onClick={handleLogout}
+                                className="text-sm text-red-400 hover:text-red-600 transition-colors cursor-pointer bg-transparent border-none"
                             >
                                 <FiLogOut size={22} />
-
                             </button>
                         </div>
                     </>
