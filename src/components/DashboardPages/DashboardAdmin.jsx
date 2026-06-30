@@ -5,7 +5,7 @@ import { useToast } from "../Toast/Toast";
 import { useUser } from "../../contexts/UserContext";
 import Tag from "../Tag";
 
-const API = "http://localhost/api";
+const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
 
 const userKey = (u) => u.id_utilisateur ?? u.id;
 

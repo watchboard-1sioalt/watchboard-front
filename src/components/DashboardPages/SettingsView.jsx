@@ -6,7 +6,7 @@ import { useToast } from '../Toast/Toast';
 import { FiSettings } from "react-icons/fi";
 import { FaTags } from "react-icons/fa";
 
-const API = "http://localhost/api";
+const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
 
 // 1. Sous-composant pour les sections simples (Mail, Mot de passe) - AGGRANDI
 function SettingsSection({ label, value, type = "text", onSave, disabled = false }) {
@@ -248,16 +248,16 @@ export default function SettingsView() {
                 </div>
             </div>
             <div className="mt-5 h-0.5 w-full bg-gray-200" />
-        <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6 mt-5 ml-3">
-                <div className="flex items-center gap-2">
-                    <FaTags className="text-blue-600" size={22} />
-                    <h1 className="text-2xl font-semibold text-blue-600">Gestions des tags</h1>
+            <div className="max-w-4xl mx-auto">
+                <div className="flex items-center justify-between mb-6 mt-5 ml-3">
+                    <div className="flex items-center gap-2">
+                        <FaTags className="text-blue-600" size={22} />
+                        <h1 className="text-2xl font-semibold text-blue-600">Gestions des tags</h1>
+                    </div>
                 </div>
             </div>
-            </div>
 
-        
+
 
         </div>
     );

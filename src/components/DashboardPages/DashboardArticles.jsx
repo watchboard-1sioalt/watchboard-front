@@ -10,7 +10,7 @@ import SearchBarView from "../SearchBarView";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 
-const API = "http://localhost/api";
+const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
 
 export default function DashboardArticles() {
     const { token } = useUser();

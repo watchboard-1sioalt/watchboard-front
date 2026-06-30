@@ -8,7 +8,7 @@ import Cards from "../Cards/Cards";
 import TagPickerModal from "../Modal/TagPickerModal";
 import SearchBarView from "../SearchBarView";
 
-const API = "http://localhost/api";
+const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
 
 function FeedArticlesView({ feed, token, onBack }) {
     const { toast } = useToast();
@@ -223,7 +223,7 @@ export default function DashboardFlux() {
         fetch(`${API}/tags/list`, { headers: { Authorization: `Bearer ${token}` } })
             .then(r => r.ok ? r.json() : [])
             .then(data => setAllTags(Array.isArray(data) ? data : []))
-            .catch(() => {});
+            .catch(() => { });
     }, [token]);
 
     const availableTags = useMemo(() => {

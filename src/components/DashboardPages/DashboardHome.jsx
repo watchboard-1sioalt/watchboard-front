@@ -7,7 +7,7 @@ import Modal from "../Modal/Modal";
 import SaveButton from "../Inputs/SaveButton";
 import SubscribeButton from "../Inputs/SubscribeButton"; // Importation du bouton animé
 
-const API = "http://localhost/api";
+const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
 
 export default function DashboardHome() {
     const { token, user } = useUser();
@@ -51,8 +51,8 @@ export default function DashboardHome() {
         return url
             .toLowerCase()
             .trim()
-            .replace(/^(https?:\/\/)?(www\.)?/, "") 
-            .replace(/\/$/, ""); 
+            .replace(/^(https?:\/\/)?(www\.)?/, "")
+            .replace(/\/$/, "");
     };
 
     // 1. MARQUAGE DES ARTICLES LUS (Sans re-déclencher l'API)
@@ -292,7 +292,7 @@ export default function DashboardHome() {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.message || "Erreur");
-            
+
             toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
             setShareModal(false);
         } catch (err) {
@@ -311,13 +311,13 @@ export default function DashboardHome() {
             });
             if (!res.ok) throw new Error();
             toast.success({ title: "Flux activé !", message: `${feed.name} a été ajouté.` });
-            
+
             setSubscribedUrls(prev => {
                 const next = new Set(prev);
                 next.add(normalizeUrl(feed.url));
                 return next;
             });
-            
+
             fetchTimelineDiscover();
         } catch {
             toast.error({ title: "Erreur", message: "Impossible d'ajouter ce flux." });
@@ -331,7 +331,7 @@ export default function DashboardHome() {
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span> 
+                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span>
                     </h1>
                     {(!hasFeeds || isTimelineEmpty) && (
                         <p className="text-xs text-gray-400 mt-0.5 font-semibold tracking-wide">
@@ -364,7 +364,7 @@ export default function DashboardHome() {
 
             {/* Grille Principale */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                
+
                 {/* Colonne gauche (Articles de h-[480px]) */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {hasFeeds && !isTimelineEmpty ? (
@@ -465,7 +465,7 @@ export default function DashboardHome() {
                                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                                 >
                                     Revoir les articles lus
-                </button>
+                                </button>
                             </div>
                         </div>
                     ) : (
@@ -506,7 +506,7 @@ export default function DashboardHome() {
                                             </div>
 
                                             {/* Rendu unifié utilisant ton nouveau composant avec Framer Motion */}
-                                            <SubscribeButton 
+                                            <SubscribeButton
                                                 isSubscribed={isSubscribed}
                                                 onClick={() => handleAddSuggestedFeed(suggested)}
                                             />

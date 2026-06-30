@@ -3,7 +3,7 @@ import { FiBell, FiCheck, FiX, FiRefreshCw } from "react-icons/fi";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 
-const API = "http://localhost/api";
+const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
 
 export default function NotificationBell() {
     const { token } = useUser();
@@ -21,7 +21,7 @@ export default function NotificationBell() {
             if (!res.ok) return;
             const data = await res.json();
             setShares(Array.isArray(data) ? data : data.data ?? []);
-        } catch {}
+        } catch { }
     }, [token]);
 
     useEffect(() => {

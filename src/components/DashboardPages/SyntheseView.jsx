@@ -10,7 +10,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import Cards from "../Cards/Cards";
 
-const API = "http://localhost/api";
+const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
 
 const TYPE_META = {
     rss: { label: "RSS", icon: <FiRss size={12} /> },
@@ -627,7 +627,7 @@ export default function SyntheseView() {
                 <div className="flex items-center gap-2.5">
                     <IoNewspaperOutline className="text-blue-600" size={26} />
                     <div>
-                        <h1 className="text-2xl font-bold text-blue-600">Mes Synthèses</h1>                    
+                        <h1 className="text-2xl font-bold text-blue-600">Mes Synthèses</h1>
                     </div>
                 </div>
                 <button
