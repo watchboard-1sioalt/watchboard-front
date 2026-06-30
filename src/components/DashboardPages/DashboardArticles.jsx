@@ -11,6 +11,7 @@ import SearchBarView from "../SearchBarView";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import { API_BASE_URL as API } from "../../config/api";
+import { LuFileType2 } from "react-icons/lu";
 
 export default function DashboardArticles() {
     const { token } = useUser();
@@ -395,7 +396,7 @@ export default function DashboardArticles() {
 
             {!loading && availableTypes.length > 1 && (
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <FiFilter size={14} className="text-gray-400 shrink-0" />
+                    <LuFileType2 size={14} className="text-gray-400 shrink-0" />
                     {availableTypes.map(t => {
                         const meta = TYPE_META[t] ?? { label: t, icon: null };
                         const active = selectedTypes.has(t);

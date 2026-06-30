@@ -291,46 +291,63 @@ export default function DashboardHome() {
     };
 
     const handleShare = async () => {
-        if (!shareEmail.trim() || !shareTarget) return;
-        setSharing(true);
-        try {
-            const urlKey = getArticleUrl(shareTarget);
-            let ressourceId = savedMap[urlKey];
+    if (!shareEmail.trim() || !shareTarget) return;
+    setSharing(true);
+    try {
+        const urlKey = getArticleUrl(shareTarget);
+        let ressourceId = savedMap[urlKey];
 
-            if (!ressourceId) {
-                const saveRes = await fetch(`${API}/ressources/from-rss`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({
-                        url: urlKey,
-                        resume: shareTarget.description || shareTarget.summary || "Aucun résumé disponible",
-                        image: getArticleImage(shareTarget),
-                        nom_original: shareTarget.title || shareTarget.nom_original || undefined,
-                        id_fluxrss: Number(shareTarget.id_fluxrss),
-                    }),
-                });
-                if (!saveRes.ok) throw new Error("Erreur d'indexation pré-partage");
-                const ressource = await saveRes.json();
-                ressourceId = ressource.id;
-                setSavedMap(prev => ({ ...prev, [urlKey]: ressource.id }));
-            }
-
-            const res = await fetch(`${API}/ressources/${ressourceId}/share`, {
+        // 1. Si la ressource n'est pas encore enregistrée en BDD
+        if (!ressourceId) {
+            const saveRes = await fetch(`${API}/ressources/from-rss`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ email: shareEmail.trim() }),
+                body: JSON.stringify({
+                    url: urlKey,
+                    resume: shareTarget.description || shareTarget.summary || "Aucun résumé disponible",
+                    image: getArticleImage(shareTarget),
+                    nom_original: shareTarget.title || shareTarget.nom_original || undefined,
+                    id_fluxrss: Number(shareTarget.id_fluxrss),
+                }),
             });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.message || "Erreur");
+            if (!saveRes.ok) throw new Error("Erreur d'indexation pré-partage");
+            
+            const ressource = await saveRes.json();
+            
+            // CORRECTION ACCÈS CLÉ PRIMAIRE : id_ressource ou id selon le retour API
+            ressourceId = ressource.id_ressource || ressource.id;
+            
+            if (!ressourceId) {
+                throw new Error("L'API n'a pas renvoyé d'identifiant de ressource valide.");
+            }
 
-            toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
-            setShareModal(false);
-        } catch (err) {
-            toast.error({ title: "Erreur", message: err.message || "Impossible de partager la ressource." });
-        } finally {
-            setSharing(false);
+            // Enregistrement dans le state local pour éviter de ré-indexer au prochain clic
+            setSavedMap(prev => ({ ...prev, [urlKey]: ressourceId }));
         }
-    };
+
+        // SÉCURITÉ EN AMONT : On bloque si l'ID est corrompu ou vaut littéralement "undefined"
+        if (!ressourceId || ressourceId === "undefined") {
+            throw new Error("Identifiant de ressource invalide détecté avant l'envoi.");
+        }
+
+        // 2. Envoi de la requête de partage avec un ID garanti
+        const res = await fetch(`${API}/ressources/${ressourceId}/share`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ email: shareEmail.trim() }),
+        });
+        
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Erreur lors du partage");
+
+        toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
+        setShareModal(false);
+    } catch (err) {
+        toast.error({ title: "Erreur", message: err.message || "Impossible de partager la ressource." });
+    } finally {
+        setSharing(false);
+    }
+};
 
     const handleToggleSuggestion = async (feed) => {
         const normalized = normalizeUrl(feed.url);
@@ -532,9 +549,6 @@ export default function DashboardHome() {
                         >
                             <FiCheckCircle size={40} className="text-emerald-500 mb-4" />
                             <h3 className="text-base font-bold text-gray-900 mb-2">Vous êtes à jour ! :)</h3>
-                            <p className="text-sm text-gray-500 leading-relaxed max-w-sm mb-6">
-                                Aucun document ou article inédit n'est disponible pour le moment. Rafraîchissez la page ou réinitialisez l'historique de lecture.
-                            </p>
                             <div className="flex gap-2">
                                 <button
                                     onClick={fetchTimelineDiscover}
