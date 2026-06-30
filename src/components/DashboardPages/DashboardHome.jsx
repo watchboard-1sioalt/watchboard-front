@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
-import { FiZap, FiBookmark, FiShare2, FiRss, FiExternalLink, FiPlus, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import { FiZap, FiShare2, FiRss, FiExternalLink, FiPlus, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import Modal from "../Modal/Modal";
+import SaveButton from "../Inputs/SaveButton";
 
 const API = "http://localhost/api";
 
@@ -358,13 +359,10 @@ export default function DashboardHome() {
                                             <FiExternalLink size={13} />
                                         </a>
 
-                                        <button
-                                            onClick={() => handleSaveArticleToggle(article)}
-                                            className={`p-2 rounded-lg border transition-colors cursor-pointer ${isSaved ? "border-blue-200 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-400 hover:text-blue-600 hover:border-blue-200"}`}
-                                            title="Enregistrer"
-                                        >
-                                            <FiBookmark size={16} className={isSaved ? "fill-current" : ""} />
-                                        </button>
+                                        <SaveButton
+                                            saved={isSaved}
+                                            onSave={() => handleSaveArticleToggle(article)}
+                                        />
 
                                         <button
                                             onClick={() => openShareModal(article)}
