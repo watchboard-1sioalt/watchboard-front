@@ -67,7 +67,7 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                     <div className="flex flex-wrap items-center gap-1.5 mb-1">
                         {onAddTag && (
                             <Tag
-                                title="Ajouter"
+                                title="Tag"
                                 icon={<FaPlus size={12} />}
                                 onTagClick={onAddTag}
                             />
