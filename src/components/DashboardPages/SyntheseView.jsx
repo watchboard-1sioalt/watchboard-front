@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { IoNewspaperOutline } from "react-icons/io5";
 import {
     FiCheckCircle, FiCpu, FiPlus, FiArrowLeft, FiCalendar, FiFileText,
-    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRss, FiGlobe
+    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRss, FiGlobe, FiTrash2, FiRefreshCw
 } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
@@ -18,9 +18,16 @@ const TYPE_META = {
     url: { label: "Site web", icon: <FiGlobe size={12} /> },
 };
 
+const MIN_RESSOURCES = 2;
+
 const getTags = (r) => r.tags ?? r.tag ?? [];
 const ressourceKey = (r) => r.id_ressource ?? r.id;
 const syntheseKey = (s) => s.id_synthese ?? s.id;
+const syntheseLabel = (s) => {
+    const text = (s.synthese ?? "").trim();
+    if (text) return text.length > 60 ? text.slice(0, 60) + "..." : text;
+    return "Synthèse sans contenu";
+};
 
 function SyntheseModal({
     step, onClose,
@@ -32,12 +39,11 @@ function SyntheseModal({
     resetFilters, hasActiveFilters,
     loadingArticles, filteredArticles,
     selectedArticles, toggleSelectArticle,
-    onConfirmSelection,
+    onConfirmSelection, isSubmittingSelection,
     // Génération / édition
     onBackToSelect,
-    hasGenerated, isGenerating, onGenerate, onRegenerate,
+    hasGenerated, isGenerating, onGenerate,
     generatedText, setGeneratedText,
-    syntheseTitle, setSyntheseTitle,
     isSavingDoc, onSave, onExportPDF,
 }) {
     const title = step === "select"
@@ -185,12 +191,17 @@ function SyntheseModal({
                         </div>
 
                         <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 shrink-0">
+                            <span className="text-xs text-gray-500">
+                                {selectedArticles.length < MIN_RESSOURCES
+                                    ? `Sélectionnez au moins ${MIN_RESSOURCES} ressources (${selectedArticles.length}/${MIN_RESSOURCES})`
+                                    : `${selectedArticles.length} ressources sélectionnées`}
+                            </span>
                             <button
                                 onClick={onConfirmSelection}
-                                disabled={selectedArticles.length === 0}
+                                disabled={selectedArticles.length < MIN_RESSOURCES || isSubmittingSelection}
                                 className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
                             >
-                                Continuer ({selectedArticles.length})
+                                {isSubmittingSelection ? "Création..." : `Continuer (${selectedArticles.length})`}
                             </button>
                         </div>
                     </>
@@ -225,18 +236,9 @@ function SyntheseModal({
 
                             {hasGenerated && (
                                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                                    <div className="flex flex-col gap-4 mb-4">
-                                        <div className="flex items-center gap-2 text-gray-900">
-                                            <FiCpu className="text-blue-600" size={18} />
-                                            <h3 className="text-sm font-semibold">Rapport généré</h3>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            value={syntheseTitle}
-                                            onChange={e => setSyntheseTitle(e.target.value)}
-                                            placeholder="Donnez un titre à cette synthèse (ex: Veille Stratégique SIO)..."
-                                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white outline-none focus:border-blue-500 transition-all font-medium"
-                                        />
+                                    <div className="flex items-center gap-2 text-gray-900 mb-4">
+                                        <FiCpu className="text-blue-600" size={18} />
+                                        <h3 className="text-sm font-semibold">Rapport généré</h3>
                                     </div>
 
                                     <textarea
@@ -251,6 +253,7 @@ function SyntheseModal({
                         <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100 shrink-0">
                             {!hasGenerated ? (
                                 <>
+                                    <span className="text-xs text-gray-500">Prêt à générer la synthèse IA</span>
                                     <button
                                         onClick={onGenerate}
                                         disabled={isGenerating}
@@ -263,10 +266,12 @@ function SyntheseModal({
                             ) : (
                                 <>
                                     <button
-                                        onClick={onRegenerate}
-                                        className="text-xs text-gray-500 hover:text-gray-800 underline cursor-pointer"
+                                        onClick={onGenerate}
+                                        disabled={isGenerating}
+                                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 cursor-pointer disabled:opacity-50"
                                     >
-                                        ← Régénérer
+                                        <FiRefreshCw size={12} className={isGenerating ? "animate-spin" : ""} />
+                                        Régénérer
                                     </button>
                                     <div className="flex items-center gap-2">
                                         <button
@@ -297,6 +302,8 @@ function SyntheseModal({
 export default function SyntheseView() {
     const { token } = useUser();
     const { toast } = useToast();
+    const authHeaders = { Authorization: `Bearer ${token}` };
+    const jsonHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
     // Navigation (page de fond)
     const [viewMode, setViewMode] = useState("list"); // "list" | "detail"
@@ -310,10 +317,14 @@ export default function SyntheseView() {
     // Détail d'une synthèse consultée
     const [activeSynthese, setActiveSynthese] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
+    const [generatingDetail, setGeneratingDetail] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(null);
 
     // Modal de création (sélection -> génération -> édition)
     const [modalOpen, setModalOpen] = useState(false);
     const [modalStep, setModalStep] = useState("select"); // "select" | "edit"
+    const [currentSyntheseId, setCurrentSyntheseId] = useState(null);
+    const [isSubmittingSelection, setIsSubmittingSelection] = useState(false);
 
     // Filtres (dans la popup de sélection)
     const [search, setSearch] = useState("");
@@ -326,16 +337,13 @@ export default function SyntheseView() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSavingDoc, setIsSavingDoc] = useState(false);
     const [generatedText, setGeneratedText] = useState("");
-    const [syntheseTitle, setSyntheseTitle] = useState("");
     const [hasGenerated, setHasGenerated] = useState(false);
 
     // 1. Charger l'historique des synthèses
     const fetchSavedSyntheses = useCallback(async () => {
         setLoadingHistory(true);
         try {
-            const res = await fetch(`${API}/syntheses`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetch(`${API}/syntheses`, { headers: authHeaders });
             if (!res.ok) throw new Error();
             const data = await res.json();
             setSavedSyntheses(Array.isArray(data) ? data : data.data ?? []);
@@ -350,9 +358,7 @@ export default function SyntheseView() {
     const fetchSavedArticlesOnly = useCallback(async () => {
         setLoadingArticles(true);
         try {
-            const res = await fetch(`${API}/ressources`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetch(`${API}/ressources`, { headers: authHeaders });
             if (!res.ok) throw new Error();
             const data = await res.json();
             setSavedArticles(Array.isArray(data) ? data : data.data ?? []);
@@ -420,19 +426,50 @@ export default function SyntheseView() {
     const openModal = () => {
         setHasGenerated(false);
         setGeneratedText("");
-        setSyntheseTitle("");
         setSelectedArticles([]);
+        setCurrentSyntheseId(null);
         resetFilters();
         setModalStep("select");
         setModalOpen(true);
         fetchSavedArticlesOnly();
     };
 
-    const closeModal = () => setModalOpen(false);
+    const closeModal = () => {
+        setModalOpen(false);
+        if (currentSyntheseId) fetchSavedSyntheses();
+    };
 
-    const confirmSelection = () => {
-        if (selectedArticles.length === 0) return;
-        setModalStep("edit");
+    // Étape 1 du CRUD : on CRÉE (ou met à jour) la synthèse avec ses ressources attachées,
+    // AVANT de pouvoir la générer (l'API exige que la synthèse existe déjà côté serveur).
+    const confirmSelection = async () => {
+        if (selectedArticles.length < MIN_RESSOURCES) return;
+        setIsSubmittingSelection(true);
+        try {
+            const ressourceIds = selectedArticles.map(ressourceKey);
+            const isUpdate = !!currentSyntheseId;
+            const res = await fetch(
+                isUpdate ? `${API}/syntheses/${currentSyntheseId}` : `${API}/syntheses`,
+                {
+                    method: isUpdate ? "PUT" : "POST",
+                    headers: jsonHeaders,
+                    body: JSON.stringify({ ressource_ids: ressourceIds }),
+                }
+            );
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || "Erreur lors de la création de la synthèse.");
+            }
+            const data = await res.json();
+            setCurrentSyntheseId(syntheseKey(data));
+            setSelectedArticles(data.ressources ?? selectedArticles);
+            setHasGenerated(false);
+            setGeneratedText("");
+            setModalStep("edit");
+        } catch (err) {
+            toast.error({ title: "Erreur", message: err.message });
+        } finally {
+            setIsSubmittingSelection(false);
+        }
     };
 
     const toggleSelectArticle = (article) => {
@@ -460,28 +497,21 @@ export default function SyntheseView() {
         });
     };
 
-    // Appels API stricts (Aucun faux texte)
+    // Étape 2 du CRUD : la synthèse existe déjà (currentSyntheseId), on demande sa génération IA.
     const handleGenerateSynthese = async () => {
-        if (selectedArticles.length === 0) return;
+        if (!currentSyntheseId) return;
         setIsGenerating(true);
         try {
-            const res = await fetch(`${API}/syntheses/generate`, {
+            const res = await fetch(`${API}/syntheses/${currentSyntheseId}/generate`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({
-                    articles: selectedArticles.map(a => ({
-                        title: a.nom_original || a.title,
-                        description: a.resume || a.description,
-                        url: a.url || a.lien
-                    }))
-                }),
+                headers: authHeaders,
             });
-            if (!res.ok) throw new Error("L'API a renvoyé une erreur lors de la génération.");
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || "L'API a renvoyé une erreur lors de la génération.");
 
-            setGeneratedText(data.synthese || data.content || "");
+            setGeneratedText(data.synthese || "");
             setHasGenerated(true);
-            toast.success({ title: "Synthèse calculée avec succès !" });
+            toast.success({ title: "Synthèse générée avec succès !" });
         } catch (err) {
             toast.error({ title: "Échec génération", message: err.message });
         } finally {
@@ -489,22 +519,19 @@ export default function SyntheseView() {
         }
     };
 
+    // Étape 3 du CRUD : on enregistre les éventuelles modifications manuelles du texte généré.
     const handleSaveDocument = async () => {
-        if (!generatedText.trim()) return;
+        if (!currentSyntheseId || !generatedText.trim()) return;
         setIsSavingDoc(true);
         try {
-            const res = await fetch(`${API}/syntheses`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({
-                    titre: syntheseTitle.trim() || `Synthèse du ${new Date().toLocaleDateString("fr-FR")}`,
-                    content: generatedText,
-                    articles_ids: selectedArticles.map(ressourceKey)
-                }),
+            const res = await fetch(`${API}/syntheses/${currentSyntheseId}`, {
+                method: "PUT",
+                headers: jsonHeaders,
+                body: JSON.stringify({ synthese: generatedText }),
             });
             if (!res.ok) throw new Error("Erreur lors de la sauvegarde sur le serveur.");
 
-            toast.success({ title: "Document enregistré dans votre historique" });
+            toast.success({ title: "Synthèse enregistrée" });
             fetchSavedSyntheses();
             setModalOpen(false);
         } catch (err) {
@@ -514,13 +541,14 @@ export default function SyntheseView() {
         }
     };
 
-    // Export PDF Propre (Exclut l'interface du Dashboard)
-    const handleExportPDF = () => {
+    const exportSyntheseToPDF = (text, date) => {
+        if (!text?.trim()) return;
         const printWindow = window.open("", "_blank");
+        const title = syntheseLabel({ synthese: text });
         printWindow.document.write(`
             <html>
             <head>
-                <title>${syntheseTitle || "Synthese_IA"}</title>
+                <title>${title}</title>
                 <style>
                     body { font-family: system-ui, sans-serif; margin: 40px; color: #1e293b; line-height: 1.6; }
                     h1 { color: #2563eb; border-b: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 24px; }
@@ -529,9 +557,9 @@ export default function SyntheseView() {
                 </style>
             </head>
             <body>
-                <h1>${syntheseTitle || "Synthèse Documentaire Automatisée"}</h1>
-                <div class="date">Généré le ${new Date().toLocaleDateString("fr-FR")}</div>
-                <div class="content">${generatedText}</div>
+                <h1>Synthèse Documentaire Automatisée</h1>
+                <div class="date">Générée le ${(date ? new Date(date) : new Date()).toLocaleDateString("fr-FR")}</div>
+                <div class="content">${text}</div>
                 <script>window.onload = function() { window.print(); window.close(); }</script>
             </body>
             </html>
@@ -539,14 +567,54 @@ export default function SyntheseView() {
         printWindow.document.close();
     };
 
+    const handleExportPDF = () => exportSyntheseToPDF(generatedText);
+
+    const handleDeleteSynthese = async (id) => {
+        try {
+            const res = await fetch(`${API}/syntheses/${id}`, {
+                method: "DELETE",
+                headers: authHeaders,
+            });
+            if (!res.ok) throw new Error();
+            setSavedSyntheses(prev => prev.filter(s => syntheseKey(s) !== id));
+            setConfirmDelete(null);
+            toast.success({ title: "Synthèse supprimée" });
+            if (viewMode === "detail" && activeSynthese && syntheseKey(activeSynthese) === id) {
+                setViewMode("list");
+                setActiveSynthese(null);
+            }
+        } catch {
+            toast.error({ title: "Erreur", message: "Impossible de supprimer cette synthèse." });
+        }
+    };
+
+    const handleGenerateFromDetail = async () => {
+        if (!activeSynthese) return;
+        const id = syntheseKey(activeSynthese);
+        setGeneratingDetail(true);
+        try {
+            const res = await fetch(`${API}/syntheses/${id}/generate`, {
+                method: "POST",
+                headers: authHeaders,
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || "Erreur lors de la génération.");
+            setActiveSynthese(prev => ({ ...prev, synthese: data.synthese }));
+            fetchSavedSyntheses();
+            toast.success({ title: "Synthèse générée" });
+        } catch (err) {
+            toast.error({ title: "Échec génération", message: err.message });
+        } finally {
+            setGeneratingDetail(false);
+        }
+    };
+
     const openDetail = async (item) => {
         setActiveSynthese(item);
         setViewMode("detail");
         setLoadingDetail(true);
         try {
-            const res = await fetch(`${API}/syntheses/${syntheseKey(item)}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetch(`${API}/syntheses/${syntheseKey(item)}`, { headers: authHeaders });
             if (res.ok) {
                 const data = await res.json();
                 setActiveSynthese(data);
@@ -558,10 +626,11 @@ export default function SyntheseView() {
         }
     };
 
-    const detailRessources = activeSynthese?.ressources ?? activeSynthese?.articles ?? [];
+    const detailRessources = activeSynthese?.ressources ?? [];
 
     // ───────────────────────────── Rendu : Détail d'une synthèse ─────────────────────────────
     if (viewMode === "detail" && activeSynthese) {
+        const id = syntheseKey(activeSynthese);
         return (
             <div className="max-w-4xl mx-auto">
                 <div className="flex items-center gap-3 mb-6">
@@ -572,21 +641,63 @@ export default function SyntheseView() {
                         <FiArrowLeft size={16} /> Synthèses
                     </button>
                     <span className="text-gray-300">/</span>
-                    <h1 className="text-xl font-semibold text-blue-600 truncate">
-                        {activeSynthese.titre || "Synthèse"}
+                    <h1 className="text-xl font-semibold text-blue-600 truncate flex-1">
+                        {syntheseLabel(activeSynthese)}
                     </h1>
+                    {activeSynthese.synthese && (
+                        <button
+                            onClick={() => exportSyntheseToPDF(activeSynthese.synthese, activeSynthese.date_creation)}
+                            className="text-gray-300 hover:text-blue-500 transition-colors cursor-pointer shrink-0"
+                            title="Télécharger la synthèse"
+                        >
+                            <FiDownload size={16} />
+                        </button>
+                    )}
+                    {confirmDelete === id ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs text-gray-500">Confirmer la suppression ?</span>
+                            <button onClick={() => handleDeleteSynthese(id)} className="text-blue-600 hover:text-red-600 cursor-pointer">
+                                <FiCheckCircle size={15} />
+                            </button>
+                            <button onClick={() => setConfirmDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                                <FiX size={15} />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setConfirmDelete(id)}
+                            className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                            title="Supprimer cette synthèse"
+                        >
+                            <FiTrash2 size={16} />
+                        </button>
+                    )}
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs mb-8">
                     <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
                         <FiCalendar size={13} />
-                        {activeSynthese.date || activeSynthese.date_creation
-                            ? new Date(activeSynthese.date || activeSynthese.date_creation).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                        {activeSynthese.date_creation
+                            ? new Date(activeSynthese.date_creation).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
                             : ""}
                     </div>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                        {activeSynthese.content || activeSynthese.synthese}
-                    </p>
+                    {activeSynthese.synthese ? (
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                            {activeSynthese.synthese}
+                        </p>
+                    ) : (
+                        <div className="flex flex-col items-center gap-3 py-6 text-center">
+                            <p className="text-sm text-gray-400">Cette synthèse n'a pas encore été générée.</p>
+                            <button
+                                onClick={handleGenerateFromDetail}
+                                disabled={generatingDetail}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
+                            >
+                                <FiCpu size={14} className={generatingDetail ? "animate-spin" : ""} />
+                                {generatingDetail ? "Génération en cours..." : "Générer maintenant"}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -646,27 +757,52 @@ export default function SyntheseView() {
                 </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {savedSyntheses.map((item) => (
-                        <button
-                            key={syntheseKey(item)}
-                            onClick={() => openDetail(item)}
-                            className="text-left bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                                    <FiFileText className="text-blue-600" size={16} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-medium text-gray-900 truncate">{item.titre}</h3>
-                                    <p className="text-xs text-gray-400 truncate mt-0.5">{item.content || item.synthese}</p>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-xs text-gray-400 whitespace-nowrap shrink-0">
-                                    <FiCalendar size={13} />
-                                    {new Date(item.date || item.date_creation).toLocaleDateString("fr-FR")}
+                    {savedSyntheses.map((item) => {
+                        const id = syntheseKey(item);
+                        return (
+                            <div key={id} className="relative group">
+                                <button
+                                    onClick={() => openDetail(item)}
+                                    className="text-left w-full bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                                            <FiFileText className="text-blue-600" size={16} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-medium text-gray-900 truncate">{syntheseLabel(item)}</h3>
+                                            <p className="text-xs text-gray-400 mt-0.5">{item.ressources?.length ?? 0} ressource{(item.ressources?.length ?? 0) > 1 ? "s" : ""}</p>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 text-xs text-gray-400 whitespace-nowrap shrink-0 pr-7">
+                                            <FiCalendar size={13} />
+                                            {item.date_creation ? new Date(item.date_creation).toLocaleDateString("fr-FR") : ""}
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                    {confirmDelete === id ? (
+                                        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-sm">
+                                            <button onClick={() => handleDeleteSynthese(id)} className="text-blue-600 hover:text-red-600 cursor-pointer">
+                                                <FiCheckCircle size={14} />
+                                            </button>
+                                            <button onClick={() => setConfirmDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                                                <FiX size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setConfirmDelete(id)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500 cursor-pointer"
+                                            title="Supprimer"
+                                        >
+                                            <FiTrash2 size={14} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                        </button>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -682,13 +818,11 @@ export default function SyntheseView() {
                     hasActiveFilters={selectedTagIds.size > 0 || selectedTypes.size > 0 || !!dateFilter || !!search}
                     loadingArticles={loadingArticles} filteredArticles={filteredArticles}
                     selectedArticles={selectedArticles} toggleSelectArticle={toggleSelectArticle}
-                    onConfirmSelection={confirmSelection}
+                    onConfirmSelection={confirmSelection} isSubmittingSelection={isSubmittingSelection}
                     onBackToSelect={() => setModalStep("select")}
                     hasGenerated={hasGenerated} isGenerating={isGenerating}
                     onGenerate={handleGenerateSynthese}
-                    onRegenerate={() => setHasGenerated(false)}
                     generatedText={generatedText} setGeneratedText={setGeneratedText}
-                    syntheseTitle={syntheseTitle} setSyntheseTitle={setSyntheseTitle}
                     isSavingDoc={isSavingDoc} onSave={handleSaveDocument} onExportPDF={handleExportPDF}
                 />
             )}

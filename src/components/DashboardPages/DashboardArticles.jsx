@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus, FiCalendar, FiRss, FiGlobe, FiShare2 } from "react-icons/fi";
+import { FiBookmark, FiTrash2, FiCheck, FiX, FiZap, FiFilter, FiPlus, FiCalendar, FiRss, FiGlobe, FiShare2, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
 import Cards from "../Cards/Cards";
@@ -61,6 +61,56 @@ export default function DashboardArticles() {
             toast.success({ title: "Ressource supprimée" });
         } catch {
             toast.error({ title: "Erreur", message: "Impossible de supprimer la ressource." });
+        }
+    };
+
+    // Suppression multiple
+    const [bulkMode, setBulkMode] = useState(false);
+    const [selectedForDelete, setSelectedForDelete] = useState(new Set());
+    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+
+    const toggleBulkMode = () => {
+        setBulkMode(v => !v);
+        setSelectedForDelete(new Set());
+    };
+
+    const toggleSelectForDelete = (id) => {
+        setSelectedForDelete(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        setBulkDeleting(true);
+        const ids = [...selectedForDelete];
+        try {
+            const results = await Promise.allSettled(
+                ids.map(id => fetch(`${API}/ressources/${id}/delete`, {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                }).then(res => { if (!res.ok) throw new Error(); return id; }))
+            );
+
+            const deletedIds = new Set(results.filter(r => r.status === "fulfilled").map(r => r.value));
+            const failedCount = results.length - deletedIds.size;
+
+            setRessources(prev => prev.filter(r => !deletedIds.has(r.id_ressource)));
+
+            if (deletedIds.size > 0) {
+                toast.success({ title: `${deletedIds.size} ressource${deletedIds.size > 1 ? "s" : ""} supprimée${deletedIds.size > 1 ? "s" : ""}` });
+            }
+            if (failedCount > 0) {
+                toast.error({ title: "Erreur", message: `${failedCount} suppression${failedCount > 1 ? "s ont" : " a"} échoué.` });
+            }
+
+            setConfirmBulkDelete(false);
+            setBulkMode(false);
+            setSelectedForDelete(new Set());
+        } finally {
+            setBulkDeleting(false);
         }
     };
 
@@ -288,6 +338,18 @@ export default function DashboardArticles() {
                             {ressources.length} ressource{ressources.length > 1 ? "s" : ""}
                         </span>
                     )}
+                    {!loading && ressources.length > 0 && (
+                        <button
+                            onClick={toggleBulkMode}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${bulkMode
+                                ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                }`}
+                        >
+                            <FiTrash2 size={16} />
+                            {bulkMode ? "Annuler" : "Suppression multiple"}
+                        </button>
+                    )}
                     <button
                         onClick={() => setCreateModal(true)}
                         className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
@@ -412,62 +474,124 @@ export default function DashboardArticles() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredRessources.map(r => (
-                        <div key={r.id_ressource} className="relative group h-full">
-                            <Cards
-                                type={r.type}
-                                titre={r.nom_original || r.url}
-                                description={r.resume}
-                                lien={r.type === "file" ? null : r.url}
-                                image={r.image}
-                                date={r.created_at
-                                    ? new Date(r.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-                                    : undefined}
-                                tags={getTags(r)}
-                                onAddTag={() => openTagModal(r.id_ressource)}
-                                onRemoveTag={(tagId) => handleTagRemoved(r.id_ressource, tagId)}
-                                onResume={() => openResumeModal(r)}
-                                onFileOpen={r.type === "file" ? () => openFileViewer(r) : undefined}
-                            />
-
-                            <div className="absolute top-3 right-3 flex items-center gap-1">
-                                <button
-                                    onClick={() => openShareModal(r)}
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-blue-500 cursor-pointer"
-                                    title="Partager"
-                                >
-                                    <FiShare2 size={14} />
-                                </button>
-                                {confirmDelete === r.id_ressource ? (
-                                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-sm">
-                                        <span className="text-xs text-gray-500">Supprimer ?</span>
-                                        <button
-                                            onClick={() => handleDelete(r.id_ressource)}
-                                            className="text-blue-600 hover:text-red-600 cursor-pointer"
-                                        >
-                                            <FiCheck size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmDelete(null)}
-                                            className="text-gray-400 hover:text-gray-600 cursor-pointer"
-                                        >
-                                            <FiX size={14} />
-                                        </button>
+                    {filteredRessources.map(r => {
+                        const isSelected = selectedForDelete.has(r.id_ressource);
+                        return (
+                            <div
+                                key={r.id_ressource}
+                                onClick={bulkMode ? () => toggleSelectForDelete(r.id_ressource) : undefined}
+                                className={`relative group h-full transition-all rounded-xl ${bulkMode ? "cursor-pointer select-none" : ""} ${bulkMode && isSelected ? "ring-2 ring-red-500 scale-[0.99]" : ""}`}
+                            >
+                                {bulkMode && (
+                                    <div className="absolute top-2 right-2 z-10">
+                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border shadow-xs transition-colors ${isSelected ? "bg-red-600 border-red-600 text-white" : "bg-white/90 border-gray-300 text-transparent"}`}>
+                                            <FiCheckCircle size={14} />
+                                        </div>
                                     </div>
-                                ) : (
-                                    <button
-                                        onClick={() => setConfirmDelete(r.id_ressource)}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-red-500 cursor-pointer"
-                                        title="Supprimer"
-                                    >
-                                        <FiTrash2 size={14} />
-                                    </button>
+                                )}
+                                <div className={bulkMode ? `pointer-events-none ${isSelected ? "opacity-90" : ""}` : ""}>
+                                    <Cards
+                                        type={r.type}
+                                        titre={r.nom_original || r.url}
+                                        description={r.resume}
+                                        lien={r.type === "file" ? null : r.url}
+                                        image={r.image}
+                                        date={r.created_at
+                                            ? new Date(r.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                                            : undefined}
+                                        tags={getTags(r)}
+                                        onAddTag={() => openTagModal(r.id_ressource)}
+                                        onRemoveTag={(tagId) => handleTagRemoved(r.id_ressource, tagId)}
+                                        onResume={() => openResumeModal(r)}
+                                        onFileOpen={r.type === "file" ? () => openFileViewer(r) : undefined}
+                                    />
+                                </div>
+
+                                {!bulkMode && (
+                                    <div className="absolute top-3 right-3 flex items-center gap-1">
+                                        <button
+                                            onClick={() => openShareModal(r)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-blue-500 cursor-pointer"
+                                            title="Partager"
+                                        >
+                                            <FiShare2 size={14} />
+                                        </button>
+                                        {confirmDelete === r.id_ressource ? (
+                                            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-sm">
+                                                <span className="text-xs text-gray-500">Confirmer la suppression ?</span>
+                                                <button
+                                                    onClick={() => handleDelete(r.id_ressource)}
+                                                    className="text-blue-600 hover:text-red-600 cursor-pointer"
+                                                >
+                                                    <FiCheck size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setConfirmDelete(null)}
+                                                    className="text-gray-400 hover:text-gray-600 cursor-pointer"
+                                                >
+                                                    <FiX size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => setConfirmDelete(r.id_ressource)}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-red-500 cursor-pointer"
+                                                title="Supprimer"
+                                            >
+                                                <FiTrash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
+
+            {/* Barre flottante d'action - suppression multiple */}
+            {bulkMode && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-full shadow-xl">
+                        <span className="text-sm text-gray-600 pl-2">
+                            {selectedForDelete.size} ressource{selectedForDelete.size > 1 ? "s" : ""} sélectionnée{selectedForDelete.size > 1 ? "s" : ""}
+                        </span>
+                        <button
+                            onClick={() => setConfirmBulkDelete(true)}
+                            disabled={selectedForDelete.size === 0}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                            <FiTrash2 size={14} />
+                            Supprimer
+                        </button>
+                        <button
+                            onClick={toggleBulkMode}
+                            className="text-gray-400 hover:text-gray-600 cursor-pointer p-1"
+                            title="Annuler"
+                        >
+                            <FiXCircle size={18} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <Modal
+                isOpen={confirmBulkDelete}
+                onClose={() => setConfirmBulkDelete(false)}
+                title="Supprimer ces ressources ?"
+                actions={[
+                    {
+                        label: bulkDeleting ? "Suppression..." : `Supprimer (${selectedForDelete.size})`,
+                        variant: "danger",
+                        onClick: handleBulkDelete,
+                        loading: bulkDeleting,
+                    },
+                ]}
+            >
+                <p className="text-sm text-gray-600">
+                    Voulez-vous vraiment supprimer ces <strong>{selectedForDelete.size}</strong> ressource{selectedForDelete.size > 1 ? "s" : ""} ? Cette action est irréversible.
+                </p>
+            </Modal>
 
             <Modal
                 isOpen={resumeModal}
@@ -541,6 +665,15 @@ export default function DashboardArticles() {
                     if (!res.ok) throw new Error();
                 }}
                 onTagAdded={handleTagAdded}
+                onGenerateTags={async () => {
+                    const res = await fetch(`${API}/ressources/${tagTarget}/tags/generate`, {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(data.message || "Erreur lors de la génération des tags.");
+                    return data.tags ?? [];
+                }}
             />
 
             <CreateRessourceModal

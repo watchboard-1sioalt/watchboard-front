@@ -22,17 +22,17 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                         onError={e => { e.currentTarget.src = defaultImage; }}
                     />
                 ) : type === "url" ? (
-                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <div className="flex flex-col items-center gap-2 text-blue-600">
                         <FiGlobe size={48} strokeWidth={1} />
                     </div>
                 ) : type === "file" ? (
-                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <div className="flex flex-col items-center gap-2 text-blue-600">
                         <FaFile size={44} />
                     </div>
                 ) : type === "rss" ? (
-                    <div className="flex flex-col items-center gap-2 text-gray-300">
+                    <div className="flex flex-col items-center gap-2 text-blue-600">
                         <FiImage size={48} strokeWidth={1} />
-                        <span className="text-xs font-medium text-gray-400">No image</span>
+                        <span className="text-xs font-medium text-blue-600">No image</span>
                     </div>
                 ) : (
                     <img
