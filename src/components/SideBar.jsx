@@ -6,11 +6,13 @@ import {
     FiChevronLeft, FiChevronRight, FiLogOut, FiUser, FiShield,
 
 } from "react-icons/fi";
+import { IoNewspaperOutline } from "react-icons/io5";
 import DashboardHome from "./DashboardPages/DashboardHome";
 import DashboardArticles from "./DashboardPages/DashboardArticles";
 import DashboardFlux from './DashboardPages/DashboardFlux';
 import SettingsView from "./DashboardPages/SettingsView";
-import DashboardAdmin from './DashboardPages/DashboardAdmin'
+import DashboardAdmin from './DashboardPages/DashboardAdmin';
+import SynthesesView from './DashboardPages/SyntheseView';
 
 const OPEN_W = "16rem";
 const SLIM_W = "3.5rem";
@@ -20,6 +22,7 @@ export const menuItems = [
     { name: "Tableau de bord", icon: <FiGrid size={20} />, element: <DashboardHome /> },
     { name: "Mes ressources", icon: <FiFileText size={20} />, element: <DashboardArticles /> },
     { name: "Mes flux", icon: <FiRss size={20} />, element: <DashboardFlux /> },
+    { name: "Mes synthèses", icon: <IoNewspaperOutline size={20} />, element: <SynthesesView /> },
     { name: "Paramètres", icon: <FiSettings size={20} />, element: <SettingsView /> },
     { name: "Administration", icon: <FiShield size={20} />, admin: true, element: <DashboardAdmin /> }
 ];
