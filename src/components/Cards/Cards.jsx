@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiBookmark, FiRss, FiGlobe, FiImage } from "react-icons/fi";
 import { BsBookmarkFill } from "react-icons/bs";
 import defaultImage from "../../images/test.png";
 import Tag from "../Tag";
 import { FaLink, FaPlus, FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
+import { IoIosSend } from "react-icons/io";
 
-export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, onSave, onAddTag, onRemoveTag, onResume, type }) {
+export default function Cards({ couleur, titre, description, date, auteur, image, lien, tags = [], saved = false, canShare = false, onSave, onAddTag, onRemoveTag, onResume, onShare, type }) {
     const [isSaved, setIsSaved] = useState(saved);
     const [saving, setSaving] = useState(false);
     const [tagsOpen, setTagsOpen] = useState(false);
+
+    useEffect(() => { setIsSaved(saved); }, [saved]);
 
     const handleSave = async () => {
         if (!onSave || saving) return;
@@ -166,14 +169,25 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                         </button>
                     )}
 
-                    {onResume && (
-                        <button
-                            onClick={onResume}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98] cursor-pointer"
-                        >
-                            Résumé
-                        </button>
-                    )}
+                    <div className="flex gap-2">
+                        {onResume && (
+                            <button
+                                onClick={onResume}
+                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98] cursor-pointer"
+                            >
+                                Résumé
+                            </button>
+                        )}
+
+                        {canShare && (
+                            <button
+                                onClick={onShare}
+                                className="w-12 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.98] cursor-pointer text-center"
+                            >
+                                <IoIosSend size={18} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
