@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
-import { FiZap, FiShare2, FiRss, FiExternalLink, FiPlus, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import { FiZap, FiRss, FiExternalLink, FiPlus, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
 import Modal from "../Modal/Modal";
 import SaveButton from "../Inputs/SaveButton";
 import SubscribeButton from "../Inputs/SubscribeButton";
-import { GoEyeClosed } from "react-icons/go";
-
-const API = "http://localhost/api";
+import ShareButton from "../Inputs/ShareButton";
+import { API_BASE_URL as  API } from "../../config/api";
 
 export default function DashboardHome() {
     const { token, user } = useUser();
@@ -23,8 +23,8 @@ export default function DashboardHome() {
     const [hasFeeds, setHasFeeds] = useState(true);
     const [isTimelineEmpty, setIsTimelineEmpty] = useState(false);
 
-    // Suivi des URLs abonnées normalisées pour la gestion d'état du bouton s'abonner
-    const [subscribedUrls, setSubscribedUrls] = useState(new Set());
+    // Cartographie des abonnements : { url_normalisee: id_flux }
+    const [subscribedFeeds, setSubscribedFeeds] = useState({});
 
     // Compteur d'articles consultés
     const [seenCount, setSeenCount] = useState(() => {
@@ -46,7 +46,6 @@ export default function DashboardHome() {
 
     const getArticleUrl = (article) => article.link || article.url || article.id;
 
-    // Nettoyeur d'URL ultra-robuste pour uniformiser et lisser les écarts de sous-domaines ou slashes
     const normalizeUrl = (url) => {
         if (!url) return "";
         return url
@@ -56,7 +55,19 @@ export default function DashboardHome() {
             .replace(/\/$/, ""); 
     };
 
-    // 1. MARQUAGE DES ARTICLES LUS (Sans re-déclencher l'API)
+    // Extracteur d'images multi-sources pour blinder l'affichage contre les variations d'API
+    const getArticleImage = (article) => {
+        if (!article) return null;
+        if (typeof article.image === "string" && article.image.trim() !== "") return article.image;
+        if (article.image && typeof article.image === "object" && article.image.url) return article.image.url;
+        if (article.image_url) return article.image_url;
+        if (article.enclosure && typeof article.enclosure === "object" && article.enclosure.url) return article.enclosure.url;
+        if (typeof article.enclosure === "string" && article.enclosure.trim() !== "") return article.enclosure;
+        if (article.cover) return article.cover;
+        return null;
+    };
+
+    // 1. MARQUAGE DES ARTICLES LUS
     useEffect(() => {
         viewedObserver.current = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -93,7 +104,6 @@ export default function DashboardHome() {
         if (node) observer.current.observe(node);
     }, [loading, hasMore, hasFeeds, isTimelineEmpty]);
 
-    // Liste étendue à 5 suggestions de flux RSS stables
     const suggestionsDeFlux = [
         { name: "TechCrunch", url: "https://techcrunch.com/feed/", type: "rss", desc: "L'actualité des startups et de la tech mondiale en continu." },
         { name: "Frandroid", url: "https://www.frandroid.com/feed", type: "rss", desc: "Référence francophone sur l'actualité tech, les tests et innovations." },
@@ -105,9 +115,7 @@ export default function DashboardHome() {
     // 3. CHARGEMENT ET SYNCHRONISATION DU FLUX
     const fetchTimelineDiscover = useCallback(async () => {
         setLoading(true);
-        setIsTimelineEmpty(false);
         try {
-            // A. Synchro des sauvegardes BDD
             const ressourcesRes = await fetch(`${API}/ressources`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -121,27 +129,44 @@ export default function DashboardHome() {
                 setSavedMap(initialSavedMap);
             }
 
-            // B. Récupération des abonnements existants de l'utilisateur
             const feedsRes = await fetch(`${API}/feeds`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (feedsRes.ok) {
                 const feedsData = await feedsRes.json();
                 const cleanFeeds = Array.isArray(feedsData) ? feedsData : feedsData.data ?? [];
-                const urls = new Set(cleanFeeds.map(f => normalizeUrl(f.url)));
-                setSubscribedUrls(urls);
+                const mapping = {};
+                cleanFeeds.forEach(f => {
+                    if (f.url) mapping[normalizeUrl(f.url)] = f.id || f.id_fluxrss;
+                });
+                setSubscribedFeeds(mapping);
+                
+                if (cleanFeeds.length === 0) {
+                    setHasFeeds(false);
+                    setAllArticles([]);
+                    setDisplayedArticles([]);
+                    setLoading(false);
+                    return;
+                }
             }
 
-            // C. Route de découverte Laravel
             const articlesRes = await fetch(`${API}/feeds/articles/discover`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!articlesRes.ok) throw new Error();
+            
+            if (!articlesRes.ok) {
+                setHasFeeds(false);
+                setLoading(false);
+                return;
+            }
+            
             const data = await articlesRes.json();
             const articlesList = Array.isArray(data) ? data : data.data ?? [];
 
             if (articlesList.length === 0) {
                 setHasFeeds(false);
+                setAllArticles([]);
+                setDisplayedArticles([]);
                 setLoading(false);
                 return;
             }
@@ -163,14 +188,19 @@ export default function DashboardHome() {
                 }
             });
 
-            if (uniqueUnseenArticles.length === 0 && articlesList.length > 0) {
+            if (uniqueUnseenArticles.length === 0) {
                 setIsTimelineEmpty(true);
+                setAllArticles([]);
+                setDisplayedArticles([]);
                 setLoading(false);
                 return;
             }
 
-            const withPhotos = uniqueUnseenArticles.filter(art => art.image || art.enclosure?.url || art.cover);
-            const withoutPhotos = uniqueUnseenArticles.filter(art => !(art.image || art.enclosure?.url || art.cover));
+            setIsTimelineEmpty(false);
+            
+            // Tri avec le nouvel extracteur d'image unifié
+            const withPhotos = uniqueUnseenArticles.filter(art => !!getArticleImage(art));
+            const withoutPhotos = uniqueUnseenArticles.filter(art => !getArticleImage(art));
             const prioritizedArticles = [...withPhotos, ...withoutPhotos];
 
             setPage(1);
@@ -185,12 +215,10 @@ export default function DashboardHome() {
         }
     }, [token]);
 
-    // Chargement initial unique au montage
     useEffect(() => {
         if (token) fetchTimelineDiscover();
     }, [token]);
 
-    // Pagination de défilement local progressif
     useEffect(() => {
         if (page > 1 && allArticles.length > 0) {
             const start = (page - 1) * ARTICLES_PER_PAGE;
@@ -215,6 +243,7 @@ export default function DashboardHome() {
     const handleSaveArticleToggle = async (article) => {
         const urlKey = getArticleUrl(article);
         const ressourceId = savedMap[urlKey];
+        const artImage = getArticleImage(article);
 
         if (!ressourceId) {
             try {
@@ -224,7 +253,7 @@ export default function DashboardHome() {
                     body: JSON.stringify({
                         url: urlKey,
                         resume: article.description || article.summary || "Aucun résumé disponible",
-                        image: article.image || article.enclosure?.url || article.cover || null,
+                        image: artImage,
                         nom_original: article.title || undefined,
                         id_fluxrss: Number(article.id_fluxrss),
                     }),
@@ -275,7 +304,7 @@ export default function DashboardHome() {
                     body: JSON.stringify({
                         url: urlKey,
                         resume: shareTarget.description || shareTarget.summary || "Aucun résumé disponible",
-                        image: shareTarget.image || shareTarget.enclosure?.url || shareTarget.cover || null,
+                        image: getArticleImage(shareTarget),
                         nom_original: shareTarget.title || shareTarget.nom_original || undefined,
                         id_fluxrss: Number(shareTarget.id_fluxrss),
                     }),
@@ -303,25 +332,47 @@ export default function DashboardHome() {
         }
     };
 
-    const handleAddSuggestedFeed = async (feed) => {
-        try {
-            const res = await fetch(`${API}/feeds`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ url: feed.url, name: feed.name }),
-            });
-            if (!res.ok) throw new Error();
-            toast.success({ title: "Flux activé !", message: `${feed.name} a été ajouté.` });
-            
-            setSubscribedUrls(prev => {
-                const next = new Set(prev);
-                next.add(normalizeUrl(feed.url));
-                return next;
-            });
-            
-            fetchTimelineDiscover();
-        } catch {
-            toast.error({ title: "Erreur", message: "Impossible d'ajouter ce flux." });
+    const handleToggleSuggestion = async (feed) => {
+        const normalized = normalizeUrl(feed.url);
+        const existingId = subscribedFeeds[normalized];
+
+        if (existingId) {
+            try {
+                const res = await fetch(`${API}/feeds/${existingId}`, {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error();
+                toast.success({ title: "Flux supprimé", message: `${feed.name} a été retiré de vos abonnements.` });
+                
+                setSubscribedFeeds(prev => {
+                    const next = { ...prev };
+                    delete next[normalized];
+                    return next;
+                });
+                fetchTimelineDiscover();
+            } catch {
+                toast.error({ title: "Erreur", message: "Impossible de supprimer ce flux." });
+            }
+        } else {
+            try {
+                const res = await fetch(`${API}/feeds`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ url: feed.url, name: feed.name }),
+                });
+                if (!res.ok) throw new Error();
+                const newFeed = await res.json();
+                toast.success({ title: "Flux activé !", message: `${feed.name} a été ajouté.` });
+                
+                setSubscribedFeeds(prev => ({
+                    ...prev,
+                    [normalized]: newFeed.id || newFeed.id_fluxrss || true
+                }));
+                fetchTimelineDiscover();
+            } catch {
+                toast.error({ title: "Erreur", message: "Impossible d'ajouter ce flux." });
+            }
         }
     };
 
@@ -332,16 +383,12 @@ export default function DashboardHome() {
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span>   
+                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span> 
                     </h1>
-                    {(!hasFeeds || isTimelineEmpty) && (
-                        <p className="text-xs text-gray-400 mt-0.5 font-semibold tracking-wide">
-                        </p>
-                    )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {hasFeeds && !isTimelineEmpty && (
+                    {hasFeeds && !isTimelineEmpty && displayedArticles.length > 0 && (
                         <button
                             onClick={fetchTimelineDiscover}
                             disabled={loading}
@@ -365,157 +412,189 @@ export default function DashboardHome() {
             {/* Grille Principale */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 
-                {/* Colonne gauche (Articles de h-[480px]) */}
+                {/* Colonne gauche */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                    {hasFeeds && !isTimelineEmpty ? (
+                    {displayedArticles.length > 0 ? (
                         <div className="flex flex-col gap-6">
-                            {displayedArticles.map((article, index) => {
-                                const isLast = displayedArticles.length === index + 1;
-                                const urlKey = getArticleUrl(article);
-                                const isSaved = !!savedMap[urlKey];
-                                const artImage = article.image || article.enclosure?.url || article.cover;
-                                const isYoutube = (article.link || article.url || "").includes("youtube.com");
+                            <AnimatePresence mode="popLayout">
+                                {displayedArticles.map((article, index) => {
+                                    const isLast = displayedArticles.length === index + 1;
+                                    const urlKey = getArticleUrl(article);
+                                    const isSaved = !!savedMap[urlKey];
+                                    
+                                    // Utilisation du nouvel extracteur sécurisé
+                                    const artImage = getArticleImage(article);
+                                    const isYoutube = (article.link || article.url || "").includes("youtube.com");
 
-                                return (
-                                    <div
-                                        key={urlKey}
-                                        data-article-key={urlKey}
-                                        ref={(node) => {
-                                            if (isLast) lastArticleRef(node);
-                                            if (node) viewedObserver.current?.observe(node);
-                                        }}
-                                        className="w-full h-[480px] bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between"
-                                    >
-                                        {/* Image (50% de la hauteur totale de la carte) */}
-                                        <div className="w-full h-1/2 bg-gray-50 relative overflow-hidden shrink-0">
-                                            {artImage ? (
-                                                <img src={artImage} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                    <FiZap size={28} className="text-gray-300" />
+                                    return (
+                                        <motion.div
+                                            key={urlKey}
+                                            data-article-key={urlKey}
+                                            ref={(node) => {
+                                                if (isLast) lastArticleRef(node);
+                                                if (node) viewedObserver.current?.observe(node);
+                                            }}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                                            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+                                            className="w-full h-[480px] bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between"
+                                        >
+                                            {/* Image 50% */}
+                                            <div className="w-full h-1/2 bg-gray-50 relative overflow-hidden shrink-0">
+                                                {artImage ? (
+                                                    <img src={artImage} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <FiZap size={28} className="text-gray-300" />
+                                                    </div>
+                                                )}
+                                                <div className={`absolute top-3 left-3 flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white ${isYoutube ? "bg-red-500" : "bg-blue-500"}`}>
+                                                    {isYoutube ? <FaYoutube size={11} /> : <FiRss size={11} />}
+                                                    {isYoutube ? "YouTube" : "RSS"}
                                                 </div>
-                                            )}
-                                            <div className={`absolute top-3 left-3 flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white ${isYoutube ? "bg-red-500" : "bg-blue-500"}`}>
-                                                {isYoutube ? <FaYoutube size={11} /> : <FiRss size={11} />}
-                                                {isYoutube ? "YouTube" : "RSS"}
-                                            </div>
-                                        </div>
-
-                                        {/* Contenu et Zone de boutons */}
-                                        <div className="p-4 flex-1 flex flex-col justify-between overflow-hidden">
-                                            <div className="space-y-1">
-                                                <h2 className="text-md font-extrabold text-gray-900 tracking-tight line-clamp-2">
-                                                    {article.title || article.nom_original}
-                                                </h2>
-                                                <p className="text-xs text-gray-400 font-medium leading-relaxed line-clamp-3">
-                                                    {article.description || article.summary || "Aucun résumé disponible pour ce document."}
-                                                </p>
                                             </div>
 
-                                            <div className="flex items-center gap-2 pt-2 shrink-0">
-                                                <a
-                                                    href={article.link || article.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-950 hover:bg-blue-600 text-white text-sm font-bold tracking-wide rounded-lg transition-colors uppercase"
-                                                >
-                                                    Voir la ressource
-                                                    <FiExternalLink size={13} />
-                                                </a>
+                                            {/* Texte 50% & Actions */}
+                                            <div className="p-4 h-1/2 flex flex-col justify-between overflow-hidden bg-white shrink-0">
+                                                <div className="space-y-1">
+                                                    <h2 className="text-md font-extrabold text-gray-900 tracking-tight line-clamp-2">
+                                                        {article.title || article.nom_original}
+                                                    </h2>
+                                                    <p className="text-xs text-gray-400 font-medium leading-relaxed line-clamp-3">
+                                                        {article.description || article.summary || "Aucun résumé disponible pour ce document."}
+                                                    </p>
+                                                </div>
 
-                                                <SaveButton
-                                                    saved={isSaved}
-                                                    onSave={() => handleSaveArticleToggle(article)}
-                                                />
+                                                <div className="flex items-center gap-2 pt-2 shrink-0">
+                                                    <motion.a
+                                                        href={article.link || article.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        whileHover="hover"
+                                                        whileTap="tap"
+                                                        variants={{
+                                                            hover: { scale: 1.015, backgroundColor: "#1d4ed8" }, 
+                                                            tap: { scale: 0.985 }
+                                                        }}
+                                                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500 text-white text-xs font-bold tracking-wide rounded-lg uppercase cursor-pointer shadow-xs"
+                                                    >
+                                                        Voir la ressource
+                                                        <motion.span
+                                                            variants={{
+                                                                hover: { x: 3, y: -3 } 
+                                                            }}
+                                                            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                                                        >
+                                                            <FiExternalLink size={12} />
+                                                        </motion.span>
+                                                    </motion.a>
 
-                                                <button
-                                                    onClick={() => openShareModal(article)}
-                                                    className="p-2 rounded-lg border border-gray-200 text-gray-400 hover:text-blue-500 hover:border-blue-200 transition-colors cursor-pointer"
-                                                    title="Partager par e-mail"
-                                                >
-                                                    <FiShare2 size={16} />
-                                                </button>
+                                                    <SaveButton
+                                                        saved={isSaved}
+                                                        onSave={() => handleSaveArticleToggle(article)}
+                                                    />
+
+                                                    <ShareButton onClick={() => openShareModal(article)} />
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
 
                             {loading && (
                                 <div className="text-center py-2 text-sm text-gray-400 font-bold uppercase tracking-wider">Mise à jour...</div>
                             )}
                         </div>
-                    ) : hasFeeds && isTimelineEmpty ? (
-                        <div className="bg-white border border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm">
+                    ) : !hasFeeds ? (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 220, damping: 20 }}
+                            className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center my-auto shadow-xs"
+                        >
+                            <h3 className="text-sm font-semibold text-blue-700 mb-1 flex items-center justify-center gap-1.5">
+                                <FiZap size={14} className="text-yellow-400" />
+                                Aucun abonnement trouvé
+                            </h3>
+                            <p className="text-sm text-blue-600">
+                                Utilisez le volet latéral droit pour activer vos premiers flux recommandés et charger des articles.
+                            </p>
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            transition={{ type: "spring", stiffness: 220, damping: 20 }}
+                            className="bg-white border border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm w-full"
+                        >
                             <FiCheckCircle size={40} className="text-emerald-500 mb-4" />
-                            <h3 className="text-base font-semibold text-gray-900 mb-2">Vous avez tout lu !</h3>
+                            <h3 className="text-base font-bold text-gray-900 mb-2">Vous êtes à jour ! :)</h3>
                             <p className="text-sm text-gray-500 leading-relaxed max-w-sm mb-6">
-                                Aucun contenu inédit n'est disponible. Utilisez l'actualisation ou réinitialisez vos lectures.
+                                Aucun document ou article inédit n'est disponible pour le moment. Rafraîchissez la page ou réinitialisez l'historique de lecture.
                             </p>
                             <div className="flex gap-2">
                                 <button
                                     onClick={fetchTimelineDiscover}
-                                    className="flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-gray-950 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
                                 >
                                     <FiRefreshCw size={13} />
                                     Vérifier les nouveautés
                                 </button>
-                                <button
-                                    onClick={handleResetHistory}
-                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
-                                >
-                                    Revoir les articles lus
-                                </button>
+                                {seenCount > 0 && (
+                                    <button
+                                        onClick={handleResetHistory}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                                    >
+                                        Revoir les articles lus
+                                    </button>
+                                )}
                             </div>
-                        </div>
-                    ) : (
-                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center my-auto">
-                            <h3 className="text-sm font-semibold text-blue-700 mb-1 flex items-center justify-center gap-1.5">
-                                <GoEyeClosed size={18} className="text-blue-400" />
-                                Aucun abonnement trouvé
-                            </h3>
-                            <p className="text-sm text-blue-600">
-                                Utilisez le volet latéral droit pour activer vos premiers flux recommandés.
-                            </p>
-                        </div>
+                        </motion.div>
                     )}
                 </div>
 
-                {/* CORRECTION : Colonne droite épurée qui s'étend sur toute la page sans card-box limitante */}
-                {!isTimelineEmpty && (
-                    <div className="hidden lg:block lg:col-span-1">
-                        <div className="flex flex-col gap-4 sticky top-4">
-                            <div className="pb-1 px-1">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Suggestions de flux</h3>
-                            </div>
+                {/* Suggestions latérales */}
+                <div className="hidden lg:block lg:col-span-1">
+                    <div className="flex flex-col gap-4 sticky top-4">
+                        <div className="pb-1 px-1">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Suggestions de flux</h3>
+                        </div>
 
-                            <div className="flex flex-col gap-3">
-                                {suggestionsDeFlux.map((suggested, idx) => {
-                                    const isSubscribed = subscribedUrls.has(normalizeUrl(suggested.url));
+                        <div className="flex flex-col gap-3">
+                            {suggestionsDeFlux.map((suggested, idx) => {
+                                const isSubscribed = !!subscribedFeeds[normalizeUrl(suggested.url)];
 
-                                    return (
-                                        <div key={idx} className="p-4 border border-gray-200 bg-white rounded-xl shadow-xs flex flex-col gap-2 transition-shadow hover:shadow-sm">
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-1.5 mb-1">
-                                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white bg-blue-500">
-                                                        RSS
-                                                    </span>
-                                                    <h4 className="text-sm font-semibold text-gray-900 truncate">{suggested.name}</h4>
-                                                </div>
-                                                <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{suggested.desc}</p>
+                                return (
+                                    <motion.div 
+                                        key={suggested.url} 
+                                        initial={{ opacity: 0, x: 24 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ type: "spring", stiffness: 260, damping: 24, delay: idx * 0.04 }}
+                                        className="p-4 border border-gray-200 bg-white rounded-xl shadow-xs flex flex-col gap-2 transition-shadow hover:shadow-sm"
+                                    >
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white bg-blue-500">
+                                                    RSS
+                                                </span>
+                                                <h4 className="text-sm font-semibold text-gray-900 truncate">{suggested.name}</h4>
                                             </div>
-
-                                            <SubscribeButton 
-                                                isSubscribed={isSubscribed}
-                                                onClick={() => handleAddSuggestedFeed(suggested)}
-                                            />
+                                            <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{suggested.desc}</p>
                                         </div>
-                                    );
-                                })}
-                            </div>
+
+                                        <SubscribeButton 
+                                            isSubscribed={isSubscribed}
+                                            onClick={() => handleToggleSuggestion(suggested)}
+                                        />
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* MODALE DE PARTAGE EMAIL */}
