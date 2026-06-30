@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { FiPlus, FiCheck, FiSearch } from "react-icons/fi";
+import { FiPlus, FiCheck, FiSearch, FiZap } from "react-icons/fi";
 import { FaPlus } from "react-icons/fa";
 import Modal from "./Modal";
 import Tag from "../Tag";
+import { useToast } from "../Toast/Toast";
 import { API_BASE_URL as API } from "../../config/api";
 
 /**
@@ -13,12 +14,19 @@ import { API_BASE_URL as API } from "../../config/api";
  *   Si la promesse rejette, le tag n'est pas marqué comme ajouté.
  *
  * onTagAdded(tag) — appelé après un attach réussi pour mettre à jour l'état parent.
+ *
+ * onGenerateTags(): Promise<tag[]> — optionnel, appelé par le parent pour lancer
+ *   l'auto-tag IA d'une ressource (POST /ressources/{id}/tags/generate). Doit
+ *   résoudre avec la liste complète des tags désormais attachés à la ressource.
+ *   N'affiche le bouton "Auto-tager" que si cette prop est fournie (ex: pas pour les flux).
  */
-export default function TagPickerModal({ isOpen, onClose, currentTags = [], token, onAttach, onTagAdded }) {
+export default function TagPickerModal({ isOpen, onClose, currentTags = [], token, onAttach, onTagAdded, onGenerateTags }) {
+    const { toast } = useToast();
     const [allTags, setAllTags] = useState([]);
     const [search, setSearch] = useState("");
     const [loadingTags, setLoadingTags] = useState(false);
     const [adding, setAdding] = useState(null); // id_tag | "new"
+    const [generating, setGenerating] = useState(false);
 
     const currentIds = new Set(currentTags.map(t => t.id_tag));
 
@@ -83,8 +91,49 @@ export default function TagPickerModal({ isOpen, onClose, currentTags = [], toke
         }
     }, [search, token, onAttach, onTagAdded]);
 
+    const handleAutoTag = useCallback(async () => {
+        if (!onGenerateTags || generating) return;
+        setGenerating(true);
+        try {
+            const generated = await onGenerateTags();
+            const newTags = Array.isArray(generated) ? generated : [];
+
+            setAllTags(prev => {
+                const map = new Map(prev.map(t => [t.id_tag, t]));
+                newTags.forEach(t => map.set(t.id_tag, t));
+                return [...map.values()];
+            });
+
+            const addedCount = newTags.filter(t => !currentIds.has(t.id_tag)).length;
+            newTags.forEach(t => {
+                if (!currentIds.has(t.id_tag)) onTagAdded(t);
+            });
+
+            toast.success({
+                title: addedCount > 0 ? "Tags générés" : "Aucun nouveau tag",
+                message: addedCount > 0 ? `${addedCount} tag${addedCount > 1 ? "s" : ""} ajouté${addedCount > 1 ? "s" : ""}.` : "La ressource a déjà tous les tags suggérés.",
+            });
+        } catch (err) {
+            toast.error({ title: "Erreur", message: err.message || "Impossible de générer des tags." });
+        } finally {
+            setGenerating(false);
+        }
+    }, [onGenerateTags, generating, currentIds, onTagAdded, toast]);
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Ajouter un tag">
+            {/* Auto-tag IA */}
+            {onGenerateTags && (
+                <button
+                    onClick={handleAutoTag}
+                    disabled={generating}
+                    className="flex items-center justify-center gap-2 w-full mb-4 px-3 py-2 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                    <FiZap size={14} className={generating ? "animate-pulse" : ""} />
+                    {generating ? "Génération en cours..." : "Auto-tager avec l'IA"}
+                </button>
+            )}
+
             {/* Recherche */}
             <div className="relative mb-4">
                 <FiSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

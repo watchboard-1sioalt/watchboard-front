@@ -51,8 +51,8 @@ export default function DashboardHome() {
         return url
             .toLowerCase()
             .trim()
-            .replace(/^(https?:\/\/)?(www\.)?/, "") 
-            .replace(/\/$/, ""); 
+            .replace(/^(https?:\/\/)?(www\.)?/, "")
+            .replace(/\/$/, "");
     };
 
     // Extracteur d'images multi-sources pour blinder l'affichage contre les variations d'API
@@ -322,7 +322,7 @@ export default function DashboardHome() {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.message || "Erreur");
-            
+
             toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
             setShareModal(false);
         } catch (err) {
