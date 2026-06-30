@@ -1,1 +1,1 @@
-export const API_BASE_URL = "http://apiwatchboard.tmsweb.fr/api";
+export const API_BASE_URL = "http://localhost/api";
