@@ -5,8 +5,10 @@ import { FiZap, FiShare2, FiRss, FiExternalLink, FiPlus, FiCheckCircle, FiRefres
 import { FaYoutube } from "react-icons/fa";
 import Modal from "../Modal/Modal";
 import SaveButton from "../Inputs/SaveButton";
-import SubscribeButton from "../Inputs/SubscribeButton"; // Importation du bouton animé
-import { API_BASE_URL as API } from "../../config/api";
+import SubscribeButton from "../Inputs/SubscribeButton";
+import { GoEyeClosed } from "react-icons/go";
+
+const API = "http://localhost/api";
 
 export default function DashboardHome() {
     const { token, user } = useUser();
@@ -44,14 +46,14 @@ export default function DashboardHome() {
 
     const getArticleUrl = (article) => article.link || article.url || article.id;
 
-    // Nettoyeur d'URL ultra-robuste pour uniformiser et lisser les écarts de saisie
+    // Nettoyeur d'URL ultra-robuste pour uniformiser et lisser les écarts de sous-domaines ou slashes
     const normalizeUrl = (url) => {
         if (!url) return "";
         return url
             .toLowerCase()
             .trim()
-            .replace(/^(https?:\/\/)?(www\.)?/, "")
-            .replace(/\/$/, "");
+            .replace(/^(https?:\/\/)?(www\.)?/, "") 
+            .replace(/\/$/, ""); 
     };
 
     // 1. MARQUAGE DES ARTICLES LUS (Sans re-déclencher l'API)
@@ -91,14 +93,16 @@ export default function DashboardHome() {
         if (node) observer.current.observe(node);
     }, [loading, hasMore, hasFeeds, isTimelineEmpty]);
 
-    // Suggestions de flux 100% au format RSS stable
+    // Liste étendue à 5 suggestions de flux RSS stables
     const suggestionsDeFlux = [
         { name: "TechCrunch", url: "https://techcrunch.com/feed/", type: "rss", desc: "L'actualité des startups et de la tech mondiale en continu." },
         { name: "Frandroid", url: "https://www.frandroid.com/feed", type: "rss", desc: "Référence francophone sur l'actualité tech, les tests et innovations." },
-        { name: "Le Monde - Pixels", url: "https://www.lemonde.fr/pixels/rss_full.xml", type: "rss", desc: "Veille française sur la culture numérique et les technologies." }
+        { name: "Le Monde - Pixels", url: "https://www.lemonde.fr/pixels/rss_full.xml", type: "rss", desc: "Veille française sur la culture numérique et les technologies." },
+        { name: "Journal du Geek", url: "https://www.journaldugeek.com/feed/", type: "rss", desc: "Actualité geek, pop culture, gadgets et nouvelles technologies." },
+        { name: "Clubic", url: "https://www.clubic.com/feed/news.rss", type: "rss", desc: "Toute l'actualité du numérique, du logiciel, du matériel et des tendances." }
     ];
 
-    // 3. CHARGEMENT ET SYNCHRONISATION DU FLUX (Uniquement à la demande)
+    // 3. CHARGEMENT ET SYNCHRONISATION DU FLUX
     const fetchTimelineDiscover = useCallback(async () => {
         setLoading(true);
         setIsTimelineEmpty(false);
@@ -251,14 +255,12 @@ export default function DashboardHome() {
         }
     };
 
-    // Ouverture instantanée de la modale de partage pour éliminer les blocages
     const openShareModal = (article) => {
         setShareTarget(article);
         setShareEmail("");
         setShareModal(true);
     };
 
-    // Traitement séquentiel de l'indexation BDD et de la distribution du partage
     const handleShare = async () => {
         if (!shareEmail.trim() || !shareTarget) return;
         setSharing(true);
@@ -291,7 +293,7 @@ export default function DashboardHome() {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.message || "Erreur");
-
+            
             toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
             setShareModal(false);
         } catch (err) {
@@ -310,13 +312,13 @@ export default function DashboardHome() {
             });
             if (!res.ok) throw new Error();
             toast.success({ title: "Flux activé !", message: `${feed.name} a été ajouté.` });
-
+            
             setSubscribedUrls(prev => {
                 const next = new Set(prev);
                 next.add(normalizeUrl(feed.url));
                 return next;
             });
-
+            
             fetchTimelineDiscover();
         } catch {
             toast.error({ title: "Erreur", message: "Impossible d'ajouter ce flux." });
@@ -330,11 +332,10 @@ export default function DashboardHome() {
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span>
+                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span>   
                     </h1>
                     {(!hasFeeds || isTimelineEmpty) && (
                         <p className="text-xs text-gray-400 mt-0.5 font-semibold tracking-wide">
-                            {!hasFeeds ? "Initialisez votre espace de veille" : "Revue de presse épuisée"}
                         </p>
                     )}
                 </div>
@@ -363,7 +364,7 @@ export default function DashboardHome() {
 
             {/* Grille Principale */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
+                
                 {/* Colonne gauche (Articles de h-[480px]) */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {hasFeeds && !isTimelineEmpty ? (
@@ -416,7 +417,7 @@ export default function DashboardHome() {
                                                     href={article.link || article.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold tracking-wide rounded-lg transition-colors uppercase"
+                                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-950 hover:bg-blue-600 text-white text-sm font-bold tracking-wide rounded-lg transition-colors uppercase"
                                                 >
                                                     Voir la ressource
                                                     <FiExternalLink size={13} />
@@ -468,9 +469,9 @@ export default function DashboardHome() {
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center">
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center my-auto">
                             <h3 className="text-sm font-semibold text-blue-700 mb-1 flex items-center justify-center gap-1.5">
-                                <FiZap size={14} className="text-yellow-400" />
+                                <GoEyeClosed size={18} className="text-blue-400" />
                                 Aucun abonnement trouvé
                             </h3>
                             <p className="text-sm text-blue-600">
@@ -480,12 +481,12 @@ export default function DashboardHome() {
                     )}
                 </div>
 
-                {/* Colonne droite : Panneau latéral de suggestions fixes */}
-                {hasFeeds && !isTimelineEmpty && (
-                    <div className="hidden lg:block lg:col-span-1 h-full">
-                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col gap-4 sticky top-4 max-h-[calc(100vh-160px)] overflow-y-auto">
-                            <div className="border-b border-gray-100 pb-2">
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Suggestions de flux</h3>
+                {/* CORRECTION : Colonne droite épurée qui s'étend sur toute la page sans card-box limitante */}
+                {!isTimelineEmpty && (
+                    <div className="hidden lg:block lg:col-span-1">
+                        <div className="flex flex-col gap-4 sticky top-4">
+                            <div className="pb-1 px-1">
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Suggestions de flux</h3>
                             </div>
 
                             <div className="flex flex-col gap-3">
@@ -493,19 +494,18 @@ export default function DashboardHome() {
                                     const isSubscribed = subscribedUrls.has(normalizeUrl(suggested.url));
 
                                     return (
-                                        <div key={idx} className="p-3 border border-gray-100 hover:border-gray-200 rounded-xl bg-slate-50/50 flex flex-col gap-2 transition-colors">
+                                        <div key={idx} className="p-4 border border-gray-200 bg-white rounded-xl shadow-xs flex flex-col gap-2 transition-shadow hover:shadow-sm">
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-1.5 mb-1">
                                                     <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full text-white bg-blue-500">
                                                         RSS
                                                     </span>
-                                                    <h4 className="text-sm font-medium text-gray-900 truncate">{suggested.name}</h4>
+                                                    <h4 className="text-sm font-semibold text-gray-900 truncate">{suggested.name}</h4>
                                                 </div>
-                                                <p className="text-xs text-gray-400 line-clamp-2 leading-snug">{suggested.desc}</p>
+                                                <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{suggested.desc}</p>
                                             </div>
 
-                                            {/* Rendu unifié utilisant ton nouveau composant avec Framer Motion */}
-                                            <SubscribeButton
+                                            <SubscribeButton 
                                                 isSubscribed={isSubscribed}
                                                 onClick={() => handleAddSuggestedFeed(suggested)}
                                             />
@@ -518,7 +518,7 @@ export default function DashboardHome() {
                 )}
             </div>
 
-            {/* MODALE DE PARTAGE EXACTE */}
+            {/* MODALE DE PARTAGE EMAIL */}
             <Modal
                 isOpen={shareModal}
                 onClose={() => setShareModal(false)}
