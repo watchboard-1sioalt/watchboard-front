@@ -5,8 +5,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useToast } from '../Toast/Toast';
 import { FiSettings } from "react-icons/fi";
 import { FaTags } from "react-icons/fa";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 // 1. Sous-composant pour les sections simples (Mail, Mot de passe) - AGGRANDI
 function SettingsSection({ label, value, type = "text", onSave, disabled = false }) {

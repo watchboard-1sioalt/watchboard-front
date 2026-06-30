@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { FiBell, FiCheck, FiX, FiRefreshCw } from "react-icons/fi";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 export default function NotificationBell() {
     const { token } = useUser();

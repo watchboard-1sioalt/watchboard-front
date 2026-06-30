@@ -9,8 +9,7 @@ import CreateRessourceModal from "../Modal/CreateRessourceModal";
 import SearchBarView from "../SearchBarView";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 export default function DashboardArticles() {
     const { token } = useUser();

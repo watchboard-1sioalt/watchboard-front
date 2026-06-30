@@ -4,8 +4,7 @@ import { FiUserCheck, FiPlus, FiEdit2, FiUsers, FiUserX, FiShield, FiClock } fro
 import { useToast } from "../Toast/Toast";
 import { useUser } from "../../contexts/UserContext";
 import Tag from "../Tag";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 const userKey = (u) => u.id_utilisateur ?? u.id;
 

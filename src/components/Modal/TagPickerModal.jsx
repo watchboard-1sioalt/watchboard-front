@@ -3,8 +3,7 @@ import { FiPlus, FiCheck, FiSearch } from "react-icons/fi";
 import { FaPlus } from "react-icons/fa";
 import Modal from "./Modal";
 import Tag from "../Tag";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 /**
  * Modal générique de sélection / création de tag.

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useToast } from "../components/Toast/Toast";
 import TextInput from "../components/Inputs/TextInput"
 import Button from "../components/Inputs/Button";
+import { API_BASE_URL as API } from "../config/api";
 
 export default function Register() {
     const [nom, setNom] = useState('');
@@ -18,7 +19,7 @@ export default function Register() {
         e.preventDefault();
         try {
             // 2. Envoyer la requête POST à ton API backend
-            const response = await fetch("http://localhost/api/auth/register", {
+            const response = await fetch(`${API}/auth/register`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

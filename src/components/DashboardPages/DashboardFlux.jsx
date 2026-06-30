@@ -7,8 +7,7 @@ import Tag from "../Tag";
 import Cards from "../Cards/Cards";
 import TagPickerModal from "../Modal/TagPickerModal";
 import SearchBarView from "../SearchBarView";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 function FeedArticlesView({ feed, token, onBack }) {
     const { toast } = useToast();

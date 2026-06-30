@@ -3,8 +3,7 @@ import { FiX, FiGlobe, FiYoutube, FiFile, FiSearch, FiPlus } from "react-icons/f
 import { FiCheck } from "react-icons/fi";
 import { FaPlus } from "react-icons/fa";
 import Tag from "../Tag";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 function extractYoutubeId(url) {
     try {

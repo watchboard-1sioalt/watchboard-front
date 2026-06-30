@@ -9,8 +9,7 @@ import { FaFile } from "react-icons/fa6";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import Cards from "../Cards/Cards";
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 const TYPE_META = {
     rss: { label: "RSS", icon: <FiRss size={12} /> },

@@ -6,8 +6,7 @@ import { FaYoutube } from "react-icons/fa";
 import Modal from "../Modal/Modal";
 import SaveButton from "../Inputs/SaveButton";
 import SubscribeButton from "../Inputs/SubscribeButton"; // Importation du bouton animé
-
-const API = "http://apiwatchboard.tmsweb.fr/apihttp://localhost/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 export default function DashboardHome() {
     const { token, user } = useUser();
