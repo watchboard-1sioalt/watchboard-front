@@ -532,9 +532,6 @@ export default function DashboardHome() {
                         >
                             <FiCheckCircle size={40} className="text-emerald-500 mb-4" />
                             <h3 className="text-base font-bold text-gray-900 mb-2">Vous êtes à jour ! :)</h3>
-                            <p className="text-sm text-gray-500 leading-relaxed max-w-sm mb-6">
-                                Aucun document ou article inédit n'est disponible pour le moment. Rafraîchissez la page ou réinitialisez l'historique de lecture.
-                            </p>
                             <div className="flex gap-2">
                                 <button
                                     onClick={fetchTimelineDiscover}
