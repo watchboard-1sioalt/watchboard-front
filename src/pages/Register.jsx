@@ -98,7 +98,7 @@ export default function Register() {
                 <form onSubmit={handleRegister} className="w-full flex flex-col gap-4">
 
                     {/* Nom et Prénom alignés horizontalement */}
-                    <div className="flex gap-2">
+                    <div className="flex items-center justify-center gap-2">
                         <TextInput
                             onChange={(e) => setNom(e.target.value)}
                             type="text"

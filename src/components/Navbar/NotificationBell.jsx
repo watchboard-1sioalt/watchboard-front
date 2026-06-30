@@ -3,6 +3,8 @@ import { FiBell, FiCheck, FiX, FiRefreshCw } from "react-icons/fi";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import { API_BASE_URL as API } from "../../config/api";
+import Modal from "../Modal/Modal";
+import Cards from "../Cards/Cards";
 
 export default function NotificationBell() {
     const { token } = useUser();
@@ -10,6 +12,7 @@ export default function NotificationBell() {
     const [open, setOpen] = useState(false);
     const [shares, setShares] = useState([]);
     const [actioning, setActioning] = useState(null);
+    const [detailTarget, setDetailTarget] = useState(null);
 
     const fetchShares = useCallback(async () => {
         if (!token) return;
@@ -38,6 +41,7 @@ export default function NotificationBell() {
             });
             if (!res.ok) throw new Error();
             setShares(prev => prev.filter(r => r.id_ressource !== id));
+            setDetailTarget(prev => prev?.id_ressource === id ? null : prev);
             toast.success({ title: "Ressource ajoutée à vos enregistrements" });
         } catch {
             toast.error({ title: "Erreur", message: "Impossible d'accepter le partage." });
@@ -55,6 +59,7 @@ export default function NotificationBell() {
             });
             if (!res.ok) throw new Error();
             setShares(prev => prev.filter(r => r.id_ressource !== id));
+            setDetailTarget(prev => prev?.id_ressource === id ? null : prev);
             toast.success({ title: "Partage ignoré" });
         } catch {
             toast.error({ title: "Erreur", message: "Impossible d'ignorer le partage." });
@@ -103,8 +108,11 @@ export default function NotificationBell() {
                             <div className="max-h-80 overflow-y-auto divide-y divide-gray-50">
                                 {shares.map(r => (
                                     <div key={r.id_ressource} className="px-4 py-3 flex items-start gap-3">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate">
+                                        <div
+                                            className="flex-1 min-w-0 cursor-pointer"
+                                            onClick={() => setDetailTarget(r)}
+                                        >
+                                            <p className="text-sm font-medium text-gray-800 truncate hover:text-blue-600 transition-colors">
                                                 {r.nom_original || r.url}
                                             </p>
                                             <p className="text-xs text-gray-400 truncate mt-0.5">{r.url}</p>
@@ -134,6 +142,42 @@ export default function NotificationBell() {
                     </div>
                 </>
             )}
+
+            <Modal
+                isOpen={!!detailTarget}
+                onClose={() => setDetailTarget(null)}
+                title="Ressource partagée"
+                actions={detailTarget ? [
+                    {
+                        label: "Ignorer",
+                        variant: "secondary",
+                        icon: <FiX size={14} />,
+                        onClick: () => handleIgnore(detailTarget.id_ressource),
+                        loading: actioning === detailTarget.id_ressource,
+                    },
+                    {
+                        label: "Accepter",
+                        variant: "primary",
+                        icon: <FiCheck size={14} />,
+                        onClick: () => handleAccept(detailTarget.id_ressource),
+                        loading: actioning === detailTarget.id_ressource,
+                    },
+                ] : []}
+            >
+                {detailTarget && (
+                    <Cards
+                        type={detailTarget.type}
+                        titre={detailTarget.nom_original || detailTarget.url}
+                        description={detailTarget.resume}
+                        image={detailTarget.image}
+                        lien={detailTarget.type === "file" ? null : detailTarget.url}
+                        date={detailTarget.created_at
+                            ? new Date(detailTarget.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                            : undefined}
+                        tags={detailTarget.tags ?? detailTarget.tag ?? []}
+                    />
+                )}
+            </Modal>
         </div>
     );
 }

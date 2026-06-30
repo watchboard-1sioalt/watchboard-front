@@ -49,11 +49,11 @@ export default function Modal({ isOpen, onClose, title, items = [], actions = []
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col"
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
                     <h2 className="text-base font-semibold text-blue-600">{title}</h2>
                     <button
                         onClick={onClose}
@@ -65,9 +65,9 @@ export default function Modal({ isOpen, onClose, title, items = [], actions = []
 
                 {/* Contenu custom (children) ou champs (items) */}
                 {children ? (
-                    <div className="px-5 py-4">{children}</div>
+                    <div className="px-5 py-4 overflow-y-auto flex-1 min-h-0">{children}</div>
                 ) : (
-                    <div className="px-5 py-4 flex flex-col gap-4">
+                    <div className="px-5 py-4 flex flex-col gap-4 overflow-y-auto flex-1 min-h-0">
                         {items.map(item => (
                             <div key={item.key} className="flex flex-col gap-1.5">
                                 {item.label && (
@@ -121,7 +121,7 @@ export default function Modal({ isOpen, onClose, title, items = [], actions = []
 
                 {/* Actions */}
                 {actions.length > 0 && (
-                    <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
+                    <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100 shrink-0">
                         {actions.map((action, i) => (
                             <button
                                 key={i}
