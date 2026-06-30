@@ -627,8 +627,7 @@ export default function SyntheseView() {
                 <div className="flex items-center gap-2.5">
                     <IoNewspaperOutline className="text-blue-600" size={26} />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Mes Synthèses</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">Historique et compilation de vos documents</p>
+                        <h1 className="text-2xl font-bold text-blue-600">Mes Synthèses</h1>                    
                     </div>
                 </div>
                 <button
