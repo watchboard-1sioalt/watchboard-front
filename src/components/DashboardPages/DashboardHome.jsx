@@ -395,13 +395,20 @@ export default function DashboardHome() {
 
     if (loading) {
         return (
-            <>
+            <div className="max-w-5xl mx-auto p-2">
+
+                <div>
+                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span>
+                    </h1>
+                </div>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95, y: 16 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 220, damping: 20 }}
                     className="bg-white border border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm w-full"
                 >
+
                     <motion.div
                         initial={{ rotate: 0 }}
                         animate={{ rotate: 360 }}
@@ -411,7 +418,7 @@ export default function DashboardHome() {
                         <FiRefreshCw size={40} />
                     </motion.div>
                 </motion.div>
-            </>
+            </div>
         )
     }
 
