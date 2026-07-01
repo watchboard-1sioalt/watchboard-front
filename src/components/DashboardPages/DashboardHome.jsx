@@ -393,6 +393,28 @@ export default function DashboardHome() {
         }
     };
 
+    if (loading) {
+        return (
+            <>
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 220, damping: 20 }}
+                    className="bg-white border border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-sm w-full"
+                >
+                    <motion.div
+                        initial={{ rotate: 0 }}
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="text-blue-600 mb-4"
+                    >
+                        <FiRefreshCw size={40} />
+                    </motion.div>
+                </motion.div>
+            </>
+        )
+    }
+
     return (
         <div className="max-w-5xl mx-auto p-2">
 
