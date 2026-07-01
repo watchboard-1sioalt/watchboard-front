@@ -328,7 +328,7 @@ export default function DashboardArticles() {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-col md:flex-col lg:flex-row items-center justify-between mb-6 ">
                 <div className="flex items-center gap-2">
                     <FiBookmark className="text-blue-600" size={22} />
                     <h1 className="text-2xl font-semibold text-blue-600">Ressources enregistrées</h1>
@@ -339,25 +339,27 @@ export default function DashboardArticles() {
                             {ressources.length} ressource{ressources.length > 1 ? "s" : ""}
                         </span>
                     )}
-                    {!loading && ressources.length > 0 && (
+                    <div className="flex items-center gap-2 ">
+                        {!loading && ressources.length > 0 && (
+                            <button
+                                onClick={toggleBulkMode}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${bulkMode
+                                    ? "bg-red-50 text-red-600 hover:bg-red-100"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    }`}
+                            >
+                                <FiTrash2 size={16} />
+                                {bulkMode ? "Annuler" : "Suppression multiple"}
+                            </button>
+                        )}
                         <button
-                            onClick={toggleBulkMode}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${bulkMode
-                                ? "bg-red-50 text-red-600 hover:bg-red-100"
-                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                }`}
+                            onClick={() => setCreateModal(true)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
                         >
-                            <FiTrash2 size={16} />
-                            {bulkMode ? "Annuler" : "Suppression multiple"}
+                            <FiPlus size={16} />
+                            Ajouter
                         </button>
-                    )}
-                    <button
-                        onClick={() => setCreateModal(true)}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
-                    >
-                        <FiPlus size={16} />
-                        Ajouter
-                    </button>
+                    </div>
                 </div>
             </div>
             {!loading && ressources.length > 0 && (

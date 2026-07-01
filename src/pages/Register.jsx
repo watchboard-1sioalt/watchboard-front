@@ -97,23 +97,20 @@ export default function Register() {
                 {/* Formulaire - Ajout du onSubmit global */}
                 <form onSubmit={handleRegister} className="w-full flex flex-col gap-4">
 
-                    {/* Nom et Prénom alignés horizontalement */}
-                    <div className="flex items-center justify-center gap-2">
-                        <TextInput
-                            onChange={(e) => setNom(e.target.value)}
-                            type="text"
-                            value={nom}
-                            placeholder="Nom"
-                            required
-                        />
-                        <TextInput
-                            onChange={(e) => setPrenom(e.target.value)}
-                            type="text"
-                            value={prenom}
-                            placeholder="Prénom"
-                            required
-                        />
-                    </div>
+                    <TextInput
+                        onChange={(e) => setNom(e.target.value)}
+                        type="text"
+                        value={nom}
+                        placeholder="Nom"
+                        required
+                    />
+                    <TextInput
+                        onChange={(e) => setPrenom(e.target.value)}
+                        type="text"
+                        value={prenom}
+                        placeholder="Prénom"
+                        required
+                    />
 
                     <TextInput
                         onChange={(e) => setEmail(e.target.value)}

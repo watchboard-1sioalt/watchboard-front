@@ -8,7 +8,7 @@ import Modal from "../Modal/Modal";
 import SaveButton from "../Inputs/SaveButton";
 import SubscribeButton from "../Inputs/SubscribeButton";
 import ShareButton from "../Inputs/ShareButton";
-import { API_BASE_URL as  API } from "../../config/api";
+import { API_BASE_URL as API } from "../../config/api";
 
 export default function DashboardHome() {
     const { token, user } = useUser();
@@ -140,7 +140,7 @@ export default function DashboardHome() {
                     if (f.url) mapping[normalizeUrl(f.url)] = f.id || f.id_fluxrss;
                 });
                 setSubscribedFeeds(mapping);
-                
+
                 if (cleanFeeds.length === 0) {
                     setHasFeeds(false);
                     setAllArticles([]);
@@ -153,13 +153,13 @@ export default function DashboardHome() {
             const articlesRes = await fetch(`${API}/feeds/articles/discover`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            
+
             if (!articlesRes.ok) {
                 setHasFeeds(false);
                 setLoading(false);
                 return;
             }
-            
+
             const data = await articlesRes.json();
             const articlesList = Array.isArray(data) ? data : data.data ?? [];
 
@@ -197,7 +197,7 @@ export default function DashboardHome() {
             }
 
             setIsTimelineEmpty(false);
-            
+
             // Tri avec le nouvel extracteur d'image unifié
             const withPhotos = uniqueUnseenArticles.filter(art => !!getArticleImage(art));
             const withoutPhotos = uniqueUnseenArticles.filter(art => !getArticleImage(art));
@@ -291,63 +291,63 @@ export default function DashboardHome() {
     };
 
     const handleShare = async () => {
-    if (!shareEmail.trim() || !shareTarget) return;
-    setSharing(true);
-    try {
-        const urlKey = getArticleUrl(shareTarget);
-        let ressourceId = savedMap[urlKey];
+        if (!shareEmail.trim() || !shareTarget) return;
+        setSharing(true);
+        try {
+            const urlKey = getArticleUrl(shareTarget);
+            let ressourceId = savedMap[urlKey];
 
-        // 1. Si la ressource n'est pas encore enregistrée en BDD
-        if (!ressourceId) {
-            const saveRes = await fetch(`${API}/ressources/from-rss`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                body: JSON.stringify({
-                    url: urlKey,
-                    resume: shareTarget.description || shareTarget.summary || "Aucun résumé disponible",
-                    image: getArticleImage(shareTarget),
-                    nom_original: shareTarget.title || shareTarget.nom_original || undefined,
-                    id_fluxrss: Number(shareTarget.id_fluxrss),
-                }),
-            });
-            if (!saveRes.ok) throw new Error("Erreur d'indexation pré-partage");
-            
-            const ressource = await saveRes.json();
-            
-            // CORRECTION ACCÈS CLÉ PRIMAIRE : id_ressource ou id selon le retour API
-            ressourceId = ressource.id_ressource || ressource.id;
-            
+            // 1. Si la ressource n'est pas encore enregistrée en BDD
             if (!ressourceId) {
-                throw new Error("L'API n'a pas renvoyé d'identifiant de ressource valide.");
+                const saveRes = await fetch(`${API}/ressources/from-rss`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({
+                        url: urlKey,
+                        resume: shareTarget.description || shareTarget.summary || "Aucun résumé disponible",
+                        image: getArticleImage(shareTarget),
+                        nom_original: shareTarget.title || shareTarget.nom_original || undefined,
+                        id_fluxrss: Number(shareTarget.id_fluxrss),
+                    }),
+                });
+                if (!saveRes.ok) throw new Error("Erreur d'indexation pré-partage");
+
+                const ressource = await saveRes.json();
+
+                // CORRECTION ACCÈS CLÉ PRIMAIRE : id_ressource ou id selon le retour API
+                ressourceId = ressource.id_ressource || ressource.id;
+
+                if (!ressourceId) {
+                    throw new Error("L'API n'a pas renvoyé d'identifiant de ressource valide.");
+                }
+
+                // Enregistrement dans le state local pour éviter de ré-indexer au prochain clic
+                setSavedMap(prev => ({ ...prev, [urlKey]: ressourceId }));
             }
 
-            // Enregistrement dans le state local pour éviter de ré-indexer au prochain clic
-            setSavedMap(prev => ({ ...prev, [urlKey]: ressourceId }));
+            // SÉCURITÉ EN AMONT : On bloque si l'ID est corrompu ou vaut littéralement "undefined"
+            if (!ressourceId || ressourceId === "undefined") {
+                throw new Error("Identifiant de ressource invalide détecté avant l'envoi.");
+            }
+
+            // 2. Envoi de la requête de partage avec un ID garanti
+            const res = await fetch(`${API}/ressources/${ressourceId}/share`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ email: shareEmail.trim() }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || "Erreur lors du partage");
+
+            toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
+            setShareModal(false);
+        } catch (err) {
+            toast.error({ title: "Erreur", message: err.message || "Impossible de partager la ressource." });
+        } finally {
+            setSharing(false);
         }
-
-        // SÉCURITÉ EN AMONT : On bloque si l'ID est corrompu ou vaut littéralement "undefined"
-        if (!ressourceId || ressourceId === "undefined") {
-            throw new Error("Identifiant de ressource invalide détecté avant l'envoi.");
-        }
-
-        // 2. Envoi de la requête de partage avec un ID garanti
-        const res = await fetch(`${API}/ressources/${ressourceId}/share`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ email: shareEmail.trim() }),
-        });
-        
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || "Erreur lors du partage");
-
-        toast.success({ title: "Ressource partagée", message: `Partagée avec ${shareEmail.trim()}` });
-        setShareModal(false);
-    } catch (err) {
-        toast.error({ title: "Erreur", message: err.message || "Impossible de partager la ressource." });
-    } finally {
-        setSharing(false);
-    }
-};
+    };
 
     const handleToggleSuggestion = async (feed) => {
         const normalized = normalizeUrl(feed.url);
@@ -361,7 +361,7 @@ export default function DashboardHome() {
                 });
                 if (!res.ok) throw new Error();
                 toast.success({ title: "Flux supprimé", message: `${feed.name} a été retiré de vos abonnements.` });
-                
+
                 setSubscribedFeeds(prev => {
                     const next = { ...prev };
                     delete next[normalized];
@@ -381,7 +381,7 @@ export default function DashboardHome() {
                 if (!res.ok) throw new Error();
                 const newFeed = await res.json();
                 toast.success({ title: "Flux activé !", message: `${feed.name} a été ajouté.` });
-                
+
                 setSubscribedFeeds(prev => ({
                     ...prev,
                     [normalized]: newFeed.id || newFeed.id_fluxrss || true
@@ -400,7 +400,7 @@ export default function DashboardHome() {
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span> 
+                        Bonjour, <span className="text-blue-600">{user?.prenom || "Alban"}</span>
                     </h1>
                 </div>
 
@@ -428,7 +428,7 @@ export default function DashboardHome() {
 
             {/* Grille Principale */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                
+
                 {/* Colonne gauche */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {displayedArticles.length > 0 ? (
@@ -438,7 +438,7 @@ export default function DashboardHome() {
                                     const isLast = displayedArticles.length === index + 1;
                                     const urlKey = getArticleUrl(article);
                                     const isSaved = !!savedMap[urlKey];
-                                    
+
                                     // Utilisation du nouvel extracteur sécurisé
                                     const artImage = getArticleImage(article);
                                     const isYoutube = (article.link || article.url || "").includes("youtube.com");
@@ -491,7 +491,7 @@ export default function DashboardHome() {
                                                         whileHover="hover"
                                                         whileTap="tap"
                                                         variants={{
-                                                            hover: { scale: 1.015, backgroundColor: "#1d4ed8" }, 
+                                                            hover: { scale: 1.015, backgroundColor: "#1d4ed8" },
                                                             tap: { scale: 0.985 }
                                                         }}
                                                         transition={{ type: "spring", stiffness: 400, damping: 20 }}
@@ -500,7 +500,7 @@ export default function DashboardHome() {
                                                         Voir la ressource
                                                         <motion.span
                                                             variants={{
-                                                                hover: { x: 3, y: -3 } 
+                                                                hover: { x: 3, y: -3 }
                                                             }}
                                                             transition={{ type: "spring", stiffness: 300, damping: 15 }}
                                                         >
@@ -526,7 +526,7 @@ export default function DashboardHome() {
                             )}
                         </div>
                     ) : !hasFeeds ? (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 16 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             transition={{ type: "spring", stiffness: 220, damping: 20 }}
@@ -541,7 +541,7 @@ export default function DashboardHome() {
                             </p>
                         </motion.div>
                     ) : (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 16 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             transition={{ type: "spring", stiffness: 220, damping: 20 }}
@@ -571,7 +571,7 @@ export default function DashboardHome() {
                 </div>
 
                 {/* Suggestions latérales */}
-                <div className="hidden lg:block lg:col-span-1">
+                <div className="lg:block lg:col-span-1">
                     <div className="flex flex-col gap-4 sticky top-4">
                         <div className="pb-1 px-1">
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Suggestions de flux</h3>
@@ -582,8 +582,8 @@ export default function DashboardHome() {
                                 const isSubscribed = !!subscribedFeeds[normalizeUrl(suggested.url)];
 
                                 return (
-                                    <motion.div 
-                                        key={suggested.url} 
+                                    <motion.div
+                                        key={suggested.url}
                                         initial={{ opacity: 0, x: 24 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ type: "spring", stiffness: 260, damping: 24, delay: idx * 0.04 }}
@@ -599,7 +599,7 @@ export default function DashboardHome() {
                                             <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">{suggested.desc}</p>
                                         </div>
 
-                                        <SubscribeButton 
+                                        <SubscribeButton
                                             isSubscribed={isSubscribed}
                                             onClick={() => handleToggleSuggestion(suggested)}
                                         />
