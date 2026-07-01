@@ -195,6 +195,8 @@ export default function DashboardFlux() {
 
     const [search, setSearch] = useState("");
     const [selectedTagIds, setSelectedTagIds] = useState(new Set());
+    const [showAllTags, setShowAllTags] = useState(false);
+    const TAG_LIMIT = 8;
 
     const authHeaders = useCallback(() => ({
         "Content-Type": "application/json",
@@ -388,7 +390,7 @@ export default function DashboardFlux() {
             {!loading && availableTags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 mb-6">
                     <FiTag size={14} className="text-gray-400 shrink-0" />
-                    {availableTags.map(tag => {
+                    {(showAllTags ? availableTags : availableTags.slice(0, TAG_LIMIT)).map(tag => {
                         const active = selectedTagIds.has(tag.id_tag);
                         return (
                             <button
@@ -403,12 +405,20 @@ export default function DashboardFlux() {
                             </button>
                         );
                     })}
+                    {availableTags.length > TAG_LIMIT && (
+                        <button
+                            onClick={() => setShowAllTags(v => !v)}
+                            className="text-xs text-blue-500 hover:text-blue-700 cursor-pointer font-medium"
+                        >
+                            {showAllTags ? "Afficher moins" : `Afficher plus (${availableTags.length - TAG_LIMIT})`}
+                        </button>
+                    )}
                     {selectedTagIds.size > 0 && (
                         <button
                             onClick={() => setSelectedTagIds(new Set())}
                             className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline"
                         >
-                            Tout afficher
+                            Tout effacer
                         </button>
                     )}
                 </div>

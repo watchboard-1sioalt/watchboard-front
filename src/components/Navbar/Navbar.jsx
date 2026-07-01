@@ -38,7 +38,7 @@ export default function Navbar() {
             <div className="flex items-center gap-4">
                 {!loading && user ? (
                     <>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center gap-3">
                             <NotificationBell />
                             <span className="text-sm text-gray-600 font-medium">
                                 {user.prenom} {user.nom.toString().toUpperCase()}

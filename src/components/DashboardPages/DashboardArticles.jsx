@@ -261,6 +261,8 @@ export default function DashboardArticles() {
     const [selectedTypes, setSelectedTypes] = useState(new Set());
     const [search, setSearch] = useState("");
     const [dateFilter, setDateFilter] = useState(null); // null | "today" | "week" | "month" | "year"
+    const [showAllTags, setShowAllTags] = useState(false);
+    const TAG_LIMIT = 8;
 
     const TYPE_META = {
         rss: { label: "RSS", icon: <FiRss size={12} /> },
@@ -430,7 +432,7 @@ export default function DashboardArticles() {
             {!loading && availableTags.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 mb-6">
                     <FiFilter size={14} className="text-gray-400 shrink-0" />
-                    {availableTags.map(tag => {
+                    {(showAllTags ? availableTags : availableTags.slice(0, TAG_LIMIT)).map(tag => {
                         const active = selectedTagIds.has(tag.id_tag);
                         return (
                             <button
@@ -445,12 +447,20 @@ export default function DashboardArticles() {
                             </button>
                         );
                     })}
+                    {availableTags.length > TAG_LIMIT && (
+                        <button
+                            onClick={() => setShowAllTags(v => !v)}
+                            className="text-xs text-blue-500 hover:text-blue-700 cursor-pointer font-medium"
+                        >
+                            {showAllTags ? "Afficher moins" : `Afficher plus (${availableTags.length - TAG_LIMIT})`}
+                        </button>
+                    )}
                     {selectedTagIds.size > 0 && (
                         <button
                             onClick={() => setSelectedTagIds(new Set())}
                             className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline"
                         >
-                            Tout afficher
+                            Tout effacer
                         </button>
                     )}
                 </div>
@@ -514,7 +524,7 @@ export default function DashboardArticles() {
                                     <div className="absolute top-3 right-3 flex items-center gap-1">
                                         <button
                                             onClick={() => openShareModal(r)}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-blue-500 cursor-pointer"
+                                            className="transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-blue-500 cursor-pointer"
                                             title="Partager"
                                         >
                                             <FiShare2 size={14} />
@@ -538,7 +548,7 @@ export default function DashboardArticles() {
                                         ) : (
                                             <button
                                                 onClick={() => setConfirmDelete(r.id_ressource)}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-red-500 cursor-pointer"
+                                                className="transition-opacity bg-white border border-gray-200 rounded-lg p-1.5 shadow-sm text-gray-400 hover:text-red-500 cursor-pointer"
                                                 title="Supprimer"
                                             >
                                                 <FiTrash2 size={14} />
