@@ -3,7 +3,7 @@ import { IoNewspaperOutline } from "react-icons/io5";
 import {
     FiCheckCircle, FiCpu, FiPlus, FiArrowLeft, FiCalendar, FiFileText,
     FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRss, FiGlobe, FiTrash2, FiRefreshCw, FiBold,
-    FiItalic
+    FiItalic, FiChevronDown
 } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
@@ -17,6 +17,125 @@ import { TYPE_META } from "../../utils/resourceTypes";
 import { API_BASE_URL as API } from "../../config/api";
 
 const MIN_RESSOURCES = 2;
+
+const EXPORT_FORMATS = [
+    { id: "pdf", label: "PDF", ext: ".pdf" },
+    { id: "md", label: "Markdown", ext: ".md" },
+    { id: "html", label: "HTML", ext: ".html" },
+    { id: "xml", label: "XML", ext: ".xml" },
+    { id: "txt", label: "Texte brut", ext: ".txt" },
+];
+
+function downloadBlob(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function htmlToPlainText(html) {
+    return html
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/p>/gi, "\n\n")
+        .replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .trim();
+}
+
+function htmlToMarkdown(html) {
+    return html
+        .replace(/<strong>([\s\S]*?)<\/strong>/gi, "**$1**")
+        .replace(/<b>([\s\S]*?)<\/b>/gi, "**$1**")
+        .replace(/<em>([\s\S]*?)<\/em>/gi, "*$1*")
+        .replace(/<i>([\s\S]*?)<\/i>/gi, "*$1*")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/p>/gi, "\n\n")
+        .replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .trim();
+}
+
+function ExportDropdown({ text, date, small = false, dropUp = false }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
+
+    const handleExport = (format) => {
+        setOpen(false);
+        if (!text?.trim()) return;
+        const dateLabel = (date ? new Date(date) : new Date()).toLocaleDateString("fr-FR");
+        const dateISO = (date ? new Date(date) : new Date()).toISOString();
+        const docTitle = "Synthèse Documentaire";
+
+        if (format === "pdf") {
+            const win = window.open("", "_blank");
+            win.document.write(`<html><head><title>${docTitle}</title><style>body{font-family:system-ui,sans-serif;margin:40px;color:#1e293b;line-height:1.6}h1{color:#2563eb;border-bottom:2px solid #e2e8f0;padding-bottom:10px}.date{font-size:12px;color:#64748b;margin-bottom:30px}</style></head><body><h1>${docTitle}</h1><div class="date">Générée le ${dateLabel}</div>${text}<script>window.onload=function(){window.print();window.close()}<\/script></body></html>`);
+            win.document.close();
+        } else if (format === "txt") {
+            downloadBlob(htmlToPlainText(text), "synthese.txt", "text/plain");
+        } else if (format === "md") {
+            downloadBlob(`# ${docTitle}\n\n*Générée le ${dateLabel}*\n\n---\n\n${htmlToMarkdown(text)}`, "synthese.md", "text/markdown");
+        } else if (format === "html") {
+            downloadBlob(`<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="UTF-8">\n<title>${docTitle}</title>\n<style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;color:#1e293b;line-height:1.7}h1{color:#2563eb;border-bottom:2px solid #e2e8f0;padding-bottom:8px}.date{color:#64748b;font-size:13px;margin-bottom:24px}</style>\n</head>\n<body>\n<h1>${docTitle}</h1>\n<p class="date">Générée le ${dateLabel}</p>\n${text}\n</body>\n</html>`, "synthese.html", "text/html");
+        } else if (format === "xml") {
+            downloadBlob(`<?xml version="1.0" encoding="UTF-8"?>\n<synthese>\n  <titre>${docTitle}</titre>\n  <date>${dateISO}</date>\n  <contenu><![CDATA[${htmlToPlainText(text)}]]></contenu>\n</synthese>`, "synthese.xml", "application/xml");
+        }
+    };
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen(v => !v)}
+                className={small
+                    ? "flex items-center gap-0.5 text-gray-400 hover:text-blue-500 transition-colors cursor-pointer shrink-0"
+                    : "flex items-center gap-1.5 px-3.5 py-2 border border-gray-200 hover:bg-slate-50 text-gray-700 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                }
+                title="Exporter la synthèse"
+            >
+                <FiDownload size={small ? 16 : 14} />
+                {!small && (
+                    <>
+                        <span>Exporter</span>
+                        <FiChevronDown size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+                    </>
+                )}
+            </button>
+            {open && (
+                <div className={`absolute right-0 z-10 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden min-w-[155px] ${dropUp ? "bottom-full mb-1" : "top-full mt-1"}`}>
+                    {EXPORT_FORMATS.map(f => (
+                        <button
+                            key={f.id}
+                            onClick={() => handleExport(f.id)}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-between gap-3"
+                        >
+                            {f.label}
+                            <span className="text-xs text-gray-400 font-mono">{f.ext}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 
 const getTags = (r) => r.tags ?? r.tag ?? [];
 const ressourceKey = (r) => r.id_ressource ?? r.id;
@@ -41,7 +160,7 @@ function SyntheseModal({
     onBackToSelect,
     hasGenerated, isGenerating, onGenerate,
     generatedText, setGeneratedText,
-    isSavingDoc, onSave, onExportPDF,
+    isSavingDoc, onSave,
 }) {
     const title = step === "select"
         ? "Sélectionner des ressources à synthétiser"
@@ -310,9 +429,7 @@ function SyntheseModal({
                                         <FiRefreshCw size={12} className={isGenerating ? "animate-spin" : ""} /> Régénérer
                                     </button>
                                     <div className="flex items-center gap-2">
-                                        <button onClick={onExportPDF} className="flex items-center gap-1.5 px-3.5 py-2 border border-gray-200 hover:bg-slate-50 text-gray-700 rounded-lg text-xs font-medium transition-colors cursor-pointer">
-                                            <FiDownload size={14} /> Exporter en PDF
-                                        </button>
+                                        <ExportDropdown text={generatedText} dropUp />
                                         <button
                                             onClick={onSave}
                                             disabled={isSavingDoc}
@@ -598,35 +715,7 @@ export default function SyntheseView() {
         }
     };
 
-    const exportSyntheseToPDF = (text, date) => {
-        if (!text?.trim()) return;
-        const printWindow = window.open("", "_blank");
-        const title = "Synthèse Documentaire Automatisée";
 
-        printWindow.document.write(`
-            <html>
-            <head>
-                <title>${title}</title>
-                <style>
-                    body { font-family: system-ui, sans-serif; margin: 40px; color: #1e293b; line-height: 1.6; }
-                    h1 { color: #2563eb; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 24px; }
-                    .date { font-size: 12px; color: #64748b; margin-bottom: 30px; }
-                    .content { white-space: pre-wrap; font-size: 14px; }
-                    font[color="#fef08a"], span[style*="background-color"] { background-color: #fef08a !important; color: #1e293b !important; padding: 0 2px; border-radius: 4px; }
-                </style>
-            </head>
-            <body>
-                <h1>${title}</h1>
-                <div class="date">Générée le ${(date ? new Date(date) : new Date()).toLocaleDateString("fr-FR")}</div>
-                <div class="content">${text}</div>
-                <script>window.onload = function() { window.print(); window.close(); }</script>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-    };
-
-    const handleExportPDF = () => exportSyntheseToPDF(generatedText);
 
     const handleDeleteSynthese = async (id) => {
         try {
@@ -704,7 +793,6 @@ export default function SyntheseView() {
                         {syntheseLabel(activeSynthese)}
                     </h1>
 
-                    {/* BOUTON ENREGISTRER CONTEXTUEL */}
                     {isDetailDirty && (
                         <button
                             onClick={handleSaveDetailEdits}
@@ -716,13 +804,7 @@ export default function SyntheseView() {
                     )}
 
                     {activeSynthese.synthese && (
-                        <button
-                            onClick={() => exportSyntheseToPDF(activeSynthese.synthese, activeSynthese.date_creation)}
-                            className="text-gray-300 hover:text-blue-500 transition-colors cursor-pointer shrink-0"
-                            title="Télécharger la synthèse"
-                        >
-                            <FiDownload size={16} />
-                        </button>
+                        <ExportDropdown text={activeSynthese.synthese} date={activeSynthese.date_creation} small />
                     )}
                     {confirmDelete === id ? (
                         <div className="flex items-center gap-2 shrink-0">
@@ -737,7 +819,7 @@ export default function SyntheseView() {
                     ) : (
                         <button
                             onClick={() => setConfirmDelete(id)}
-                            className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                            className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer shrink-0"
                             title="Supprimer cette synthèse"
                         >
                             <FiTrash2 size={16} />
@@ -943,7 +1025,7 @@ export default function SyntheseView() {
                     hasGenerated={hasGenerated} isGenerating={isGenerating}
                     onGenerate={handleGenerateSynthese}
                     generatedText={generatedText} setGeneratedText={setGeneratedText}
-                    isSavingDoc={isSavingDoc} onSave={handleSaveDocument} onExportPDF={handleExportPDF}
+                    isSavingDoc={isSavingDoc} onSave={handleSaveDocument}
                 />
             )}
         </div>
