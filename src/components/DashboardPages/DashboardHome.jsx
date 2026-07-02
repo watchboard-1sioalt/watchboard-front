@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
-import { FiZap, FiRss, FiExternalLink, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import { FiZap, FiRss, FiExternalLink, FiCheckCircle, FiRefreshCw, FiImage } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import ShareModal from "../ShareModal";
