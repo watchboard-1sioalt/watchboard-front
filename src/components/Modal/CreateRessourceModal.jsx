@@ -305,7 +305,7 @@ export default function CreateRessourceModal({ isOpen, onClose, token, onCreated
                                 ref={fileRef}
                                 type="file"
                                 accept=".txt,.md,.pdf"
-                                onChange={e => setFile(e.target.files?.[0] ?? null)}
+                                onChange={e => { (setFile(e.target.files?.[0] ?? null)); setNom(e.target.files?.[0].name?.split('.')[0] ?? "") }}
                                 className="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 cursor-pointer file:cursor-pointer"
                             />
                         </div>

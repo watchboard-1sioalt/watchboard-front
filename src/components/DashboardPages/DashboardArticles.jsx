@@ -558,15 +558,23 @@ export default function DashboardArticles() {
                 }}
             />
 
-            <CreateRessourceModal
-                isOpen={createModal}
-                onClose={() => setCreateModal(false)}
-                token={token}
-                onCreated={(newRessource) => {
-                    setRessources(prev => [newRessource, ...prev]);
-                    toast.success({ title: "Ressource ajoutée" });
-                }}
-            />
+                <CreateRessourceModal
+                    isOpen={createModal}
+                    onClose={() => setCreateModal(false)}
+                    token={token}
+                    onCreated={(newRessource) => {
+                        // Si nom_original est vide, on extrait le nom du fichier depuis l'URL ou le chemin
+                        const fallbackName = newRessource.url ? newRessource.url.split('/').pop() : "Document sans titre";
+                        
+                        const adjustedRessource = {
+                            ...newRessource,
+                            nom_original: newRessource.nom_original?.trim() || fallbackName
+                        };
+
+                        setRessources(prev => [adjustedRessource, ...prev]);
+                        toast.success({ title: "Ressource ajoutée" });
+                    }}
+                />
 
             <FileViewer
                 isOpen={fileViewerOpen}
