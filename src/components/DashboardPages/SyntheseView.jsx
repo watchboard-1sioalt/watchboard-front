@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { IoNewspaperOutline } from "react-icons/io5";
 import {
     FiCheckCircle, FiCpu, FiPlus, FiArrowLeft, FiCalendar, FiFileText,
-    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRefreshCw
+    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRss, FiGlobe, FiTrash2, FiRefreshCw, FiBold
 } from "react-icons/fi";
+import { FaYoutube } from "react-icons/fa";
+import { FaFile } from "react-icons/fa6";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import Cards from "../Cards/Cards";
@@ -13,17 +15,25 @@ import TagFilterBar from "../TagFilterBar";
 import { TYPE_META } from "../../utils/resourceTypes";
 import { API_BASE_URL as API } from "../../config/api";
 
+const TYPE_META = {
+    rss: { label: "RSS", icon: <FiRss size={12} /> },
+    youtube: { label: "YouTube", icon: <FaYoutube size={12} /> },
+    file: { label: "Fichier", icon: <FaFile size={12} /> },
+    url: { label: "Site web", icon: <FiGlobe size={12} /> },
+};
+
 const MIN_RESSOURCES = 2;
 
 const getTags = (r) => r.tags ?? r.tag ?? [];
 const ressourceKey = (r) => r.id_ressource ?? r.id;
 const syntheseKey = (s) => s.id_synthese ?? s.id;
 const syntheseLabel = (s) => {
-    const text = (s.synthese ?? "").trim();
+    const text = (s.synthese ?? "").trim().replace(/<[^>]*>/g, "");
     if (text) return text.length > 60 ? text.slice(0, 60) + "..." : text;
     return "Synthèse sans contenu";
 };
 
+// MODALE DE CRÉATION / ÉDITION
 function SyntheseModal({
     step, onClose,
     search, setSearch,
@@ -41,7 +51,36 @@ function SyntheseModal({
 }) {
     const title = step === "select"
         ? "Sélectionner des ressources à synthétiser"
-        : hasGenerated ? "Édition de la synthèse finale" : "Génération de la synthèse";
+        : hasGenerated ? "Édition du rapport final" : "Génération de la synthèse";
+
+    const editorRef = useRef(null);
+    const generatedSectionRef = useRef(null); // Ref pour le scroll automatique
+
+    // Initialisation du contenu HTML de l'éditeur
+    useEffect(() => {
+        if (editorRef.current && step === "edit" && hasGenerated) {
+            if (editorRef.current.innerHTML !== generatedText) {
+                editorRef.current.innerHTML = generatedText;
+            }
+        }
+    }, [step, hasGenerated]);
+
+    // TRANSITION : Scroll automatique et effortless dès que la synthèse est générée
+    useEffect(() => {
+        if (hasGenerated && generatedSectionRef.current) {
+            generatedSectionRef.current.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+    }, [hasGenerated]);
+
+    const execEditorCommand = (command, value = null) => {
+        document.execCommand(command, false, value);
+        if (editorRef.current) {
+            setGeneratedText(editorRef.current.innerHTML);
+        }
+    };
 
     return (
         <div
@@ -55,10 +94,7 @@ function SyntheseModal({
             >
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
                     <h2 className="text-base font-semibold text-blue-600">{title}</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors p-1 rounded-lg hover:bg-gray-100"
-                    >
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors p-1 rounded-lg hover:bg-gray-100">
                         <FiX size={18} />
                     </button>
                 </div>
@@ -93,6 +129,11 @@ function SyntheseModal({
                                         {p.label}
                                     </button>
                                 ))}
+                                {hasActiveFilters && (
+                                    <button onClick={resetFilters} className="text-gray-400 hover:text-gray-600 cursor-pointer underline">
+                                        Réinitialiser
+                                    </button>
+                                )}
                             </div>
 
                             {availableTypes.length > 1 && (
@@ -145,6 +186,7 @@ function SyntheseModal({
                                     {filteredArticles.map((article, i) => {
                                         const key = ressourceKey(article) ?? i;
                                         const isSelected = selectedArticles.some(a => ressourceKey(a) === key);
+
                                         return (
                                             <div
                                                 key={key}
@@ -192,10 +234,7 @@ function SyntheseModal({
                 ) : (
                     <>
                         <div className="px-5 py-4 overflow-y-auto flex-1">
-                            <button
-                                onClick={onBackToSelect}
-                                className="text-xs text-blue-500 hover:text-blue-700 cursor-pointer underline mb-4"
-                            >
+                            <button onClick={onBackToSelect} className="text-xs text-blue-500 hover:text-blue-700 cursor-pointer underline mb-4">
                                 ← Modifier la sélection ({selectedArticles.length})
                             </button>
 
@@ -219,15 +258,40 @@ function SyntheseModal({
                             </div>
 
                             {hasGenerated && (
-                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-                                    <div className="flex items-center gap-2 text-gray-900 mb-4">
-                                        <FiCpu className="text-blue-600" size={18} />
-                                        <h3 className="text-sm font-semibold">Synthèse générée</h3>
+                                <div
+                                    ref={generatedSectionRef}
+                                    className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden shadow-xs flex flex-col scroll-mt-4"
+                                >
+                                    <div className="flex items-center gap-1 bg-slate-100 border-b border-gray-200 px-3 py-1.5 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => execEditorCommand("bold")}
+                                            className="p-1.5 text-gray-700 hover:bg-gray-200 rounded transition-colors cursor-pointer border border-gray-300 bg-white font-bold flex items-center justify-center"
+                                        >
+                                            <FiBold size={14} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => execEditorCommand("backColor", "#fef08a")}
+                                            className="px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-yellow-200 rounded transition-colors cursor-pointer border border-yellow-300 bg-yellow-50 flex items-center justify-center gap-1"
+                                        >
+                                            <span className="w-2 h-2 bg-yellow-400 rounded-full"></span> Surligner
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => execEditorCommand("removeFormat")}
+                                            className="px-2 py-1 text-xs text-gray-500 hover:bg-gray-200 rounded transition-colors cursor-pointer border border-gray-200 bg-white"
+                                        >
+                                            Normal
+                                        </button>
                                     </div>
-                                    <textarea
-                                        value={generatedText}
-                                        onChange={(e) => setGeneratedText(e.target.value)}
-                                        className="w-full h-64 p-4 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none font-mono text-gray-700 leading-relaxed shadow-inner"
+
+                                    <div
+                                        ref={editorRef}
+                                        contentEditable
+                                        onInput={(e) => setGeneratedText(e.target.innerHTML)}
+                                        className="w-full h-64 p-4 text-sm bg-white outline-none font-sans text-gray-700 leading-relaxed shadow-inner overflow-y-auto min-h-[16rem]"
+                                        placeholder="Éditez et formatez votre synthèse en direct..."
                                     />
                                 </div>
                             )}
@@ -248,19 +312,11 @@ function SyntheseModal({
                                 </>
                             ) : (
                                 <>
-                                    <button
-                                        onClick={onGenerate}
-                                        disabled={isGenerating}
-                                        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 cursor-pointer disabled:opacity-50"
-                                    >
-                                        <FiRefreshCw size={12} className={isGenerating ? "animate-spin" : ""} />
-                                        Régénérer
+                                    <button onClick={onGenerate} disabled={isGenerating} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 cursor-pointer disabled:opacity-50">
+                                        <FiRefreshCw size={12} className={isGenerating ? "animate-spin" : ""} /> Régénérer
                                     </button>
                                     <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={onExportPDF}
-                                            className="flex items-center gap-1.5 px-3.5 py-2 border border-gray-200 hover:bg-slate-50 text-gray-700 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                                        >
+                                        <button onClick={onExportPDF} className="flex items-center gap-1.5 px-3.5 py-2 border border-gray-200 hover:bg-slate-50 text-gray-700 rounded-lg text-xs font-medium transition-colors cursor-pointer">
                                             <FiDownload size={14} /> Exporter en PDF
                                         </button>
                                         <button
@@ -282,6 +338,7 @@ function SyntheseModal({
     );
 }
 
+// VUE GLOBALE & HISTORIQUE
 export default function SyntheseView() {
     const { token } = useUser();
     const { toast } = useToast();
@@ -289,27 +346,38 @@ export default function SyntheseView() {
     const jsonHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
     const [viewMode, setViewMode] = useState("list");
+
     const [savedSyntheses, setSavedSyntheses] = useState([]);
     const [savedArticles, setSavedArticles] = useState([]);
     const [loadingArticles, setLoadingArticles] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(true);
+
     const [activeSynthese, setActiveSynthese] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [generatingDetail, setGeneratingDetail] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(null);
+
     const [modalOpen, setModalOpen] = useState(false);
     const [modalStep, setModalStep] = useState("select");
     const [currentSyntheseId, setCurrentSyntheseId] = useState(null);
     const [isSubmittingSelection, setIsSubmittingSelection] = useState(false);
+
     const [search, setSearch] = useState("");
     const [selectedTagIds, setSelectedTagIds] = useState(new Set());
     const [selectedTypes, setSelectedTypes] = useState(new Set());
     const [dateFilter, setDateFilter] = useState(null);
+
     const [selectedArticles, setSelectedArticles] = useState([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSavingDoc, setIsSavingDoc] = useState(false);
     const [generatedText, setGeneratedText] = useState("");
     const [hasGenerated, setHasGenerated] = useState(false);
+
+    // États spécifiques pour l'édition WYSIWYG en vue détail
+    const detailEditorRef = useRef(null);
+    const [detailText, setDetailText] = useState("");
+    const [isDetailDirty, setIsDetailDirty] = useState(false);
+    const [isSavingDetail, setIsSavingDetail] = useState(false);
 
     const fetchSavedSyntheses = useCallback(async () => {
         setLoadingHistory(true);
@@ -343,6 +411,45 @@ export default function SyntheseView() {
         if (token) fetchSavedSyntheses();
     }, [token, fetchSavedSyntheses]);
 
+    // Initialisation HTML de la zone éditable du détail
+    useEffect(() => {
+        if (viewMode === "detail" && activeSynthese && detailEditorRef.current) {
+            detailEditorRef.current.innerHTML = activeSynthese.synthese || "";
+            setDetailText(activeSynthese.synthese || "");
+            setIsDetailDirty(false);
+        }
+    }, [viewMode, activeSynthese]);
+
+    const execDetailCommand = (command, value = null) => {
+        document.execCommand(command, false, value);
+        if (detailEditorRef.current) {
+            setDetailText(detailEditorRef.current.innerHTML);
+            setIsDetailDirty(true);
+        }
+    };
+
+    const handleSaveDetailEdits = async () => {
+        const id = syntheseKey(activeSynthese);
+        if (!id || !isDetailDirty) return;
+        setIsSavingDetail(true);
+        try {
+            const res = await fetch(`${API}/syntheses/${id}`, {
+                method: "PUT",
+                headers: jsonHeaders,
+                body: JSON.stringify({ synthese: detailText }),
+            });
+            if (!res.ok) throw new Error();
+            toast.success({ title: "Modifications enregistrées" });
+            setIsDetailDirty(false);
+            setActiveSynthese(prev => ({ ...prev, synthese: detailText }));
+            fetchSavedSyntheses();
+        } catch {
+            toast.error({ title: "Erreur", message: "Impossible de sauvegarder les changements." });
+        } finally {
+            setIsSavingDetail(false);
+        }
+    };
+
     const availableTags = useMemo(() => {
         const map = new Map();
         savedArticles.forEach(art => getTags(art).forEach(t => map.set(t.id_tag, t)));
@@ -367,7 +474,7 @@ export default function SyntheseView() {
         if (dateFilter) {
             const now = new Date();
             const start = new Date();
-            if (dateFilter === "today") { start.setHours(0, 0, 0, 0); }
+            if (dateFilter === "today") start.setHours(0, 0, 0, 0);
             else if (dateFilter === "week") { start.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); start.setHours(0, 0, 0, 0); }
             else if (dateFilter === "month") { start.setDate(1); start.setHours(0, 0, 0, 0); }
             else if (dateFilter === "year") { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
@@ -465,6 +572,7 @@ export default function SyntheseView() {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.message || "L'API a renvoyé une erreur lors de la génération.");
+
             setGeneratedText(data.synthese || "");
             setHasGenerated(true);
             toast.success({ title: "Synthèse générée avec succès !" });
@@ -485,6 +593,7 @@ export default function SyntheseView() {
                 body: JSON.stringify({ synthese: generatedText }),
             });
             if (!res.ok) throw new Error("Erreur lors de la sauvegarde sur le serveur.");
+
             toast.success({ title: "Synthèse enregistrée" });
             fetchSavedSyntheses();
             setModalOpen(false);
@@ -498,20 +607,22 @@ export default function SyntheseView() {
     const exportSyntheseToPDF = (text, date) => {
         if (!text?.trim()) return;
         const printWindow = window.open("", "_blank");
-        const title = syntheseLabel({ synthese: text });
+        const title = "Synthèse Documentaire Automatisée";
+
         printWindow.document.write(`
             <html>
             <head>
                 <title>${title}</title>
                 <style>
                     body { font-family: system-ui, sans-serif; margin: 40px; color: #1e293b; line-height: 1.6; }
-                    h1 { color: #2563eb; border-b: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 24px; }
+                    h1 { color: #2563eb; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 24px; }
                     .date { font-size: 12px; color: #64748b; margin-bottom: 30px; }
                     .content { white-space: pre-wrap; font-size: 14px; }
+                    font[color="#fef08a"], span[style*="background-color"] { background-color: #fef08a !important; color: #1e293b !important; padding: 0 2px; border-radius: 4px; }
                 </style>
             </head>
             <body>
-                <h1>Synthèse Documentaire Automatisée</h1>
+                <h1>${title}</h1>
                 <div class="date">Générée le ${(date ? new Date(date) : new Date()).toLocaleDateString("fr-FR")}</div>
                 <div class="content">${text}</div>
                 <script>window.onload = function() { window.print(); window.close(); }</script>
@@ -520,6 +631,8 @@ export default function SyntheseView() {
         `);
         printWindow.document.close();
     };
+
+    const handleExportPDF = () => exportSyntheseToPDF(generatedText);
 
     const handleDeleteSynthese = async (id) => {
         try {
@@ -572,6 +685,7 @@ export default function SyntheseView() {
                 setActiveSynthese(data);
             }
         } catch {
+            // fallback list state
         } finally {
             setLoadingDetail(false);
         }
@@ -579,6 +693,7 @@ export default function SyntheseView() {
 
     const detailRessources = activeSynthese?.ressources ?? [];
 
+    // ───────────────────────────── RENDU : DÉTAIL D'UNE SYNTHÈSE (AVEC WYSIWYG) ─────────────────────────────
     if (viewMode === "detail" && activeSynthese) {
         const id = syntheseKey(activeSynthese);
         return (
@@ -594,6 +709,18 @@ export default function SyntheseView() {
                     <h1 className="text-xl font-semibold text-blue-600 truncate flex-1">
                         {syntheseLabel(activeSynthese)}
                     </h1>
+
+                    {/* BOUTON ENREGISTRER CONTEXTUEL */}
+                    {isDetailDirty && (
+                        <button
+                            onClick={handleSaveDetailEdits}
+                            disabled={isSavingDetail}
+                            className="flex items-center gap-1 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors shadow-xs disabled:opacity-50"
+                        >
+                            <FiSave size={13} /> {isSavingDetail ? "Sauvegarde..." : "Enregistrer"}
+                        </button>
+                    )}
+
                     {activeSynthese.synthese && (
                         <button
                             onClick={() => exportSyntheseToPDF(activeSynthese.synthese, activeSynthese.date_creation)}
@@ -603,46 +730,96 @@ export default function SyntheseView() {
                             <FiDownload size={16} />
                         </button>
                     )}
-                    <InlineDeleteConfirm
-                        isConfirming={confirmDelete === id}
-                        onRequestConfirm={() => setConfirmDelete(id)}
-                        onConfirm={() => handleDeleteSynthese(id)}
-                        onCancel={() => setConfirmDelete(null)}
-                        wrapperClassName="flex items-center gap-2 shrink-0"
-                        trashClassName="text-gray-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
-                        iconSize={15}
-                    />
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs mb-8">
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
-                        <FiCalendar size={13} />
-                        {activeSynthese.date_creation
-                            ? new Date(activeSynthese.date_creation).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-                            : ""}
-                    </div>
-                    {activeSynthese.synthese ? (
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                            {activeSynthese.synthese}
-                        </p>
-                    ) : (
-                        <div className="flex flex-col items-center gap-3 py-6 text-center">
-                            <p className="text-sm text-gray-400">Cette synthèse n'a pas encore été générée.</p>
-                            <button
-                                onClick={handleGenerateFromDetail}
-                                disabled={generatingDetail}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium cursor-pointer disabled:opacity-50"
-                            >
-                                <FiCpu size={14} className={generatingDetail ? "animate-spin" : ""} />
-                                {generatingDetail ? "Génération en cours..." : "Générer maintenant"}
+                    {confirmDelete === id ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs text-gray-500">Confirmer la suppression ?</span>
+                            <button onClick={() => handleDeleteSynthese(id)} className="text-blue-600 hover:text-red-600 cursor-pointer">
+                                <FiCheckCircle size={15} />
+                            </button>
+                            <button onClick={() => setConfirmDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                                <FiX size={15} />
                             </button>
                         </div>
+                    ) : (
+                        <button
+                            onClick={() => setConfirmDelete(id)}
+                            className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                            title="Supprimer cette synthèse"
+                        >
+                            <FiTrash2 size={16} />
+                        </button>
                     )}
                 </div>
 
+                <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden mb-8 flex flex-col">
+                    <div className="flex items-center justify-between bg-slate-50 border-b border-gray-100 px-4 py-2 text-xs text-gray-400 shrink-0">
+                        <div className="flex items-center gap-1.5 font-medium">
+                            <FiCalendar size={13} />
+                            {activeSynthese.date_creation
+                                ? new Date(activeSynthese.date_creation).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                                : ""}
+                        </div>
+
+                        {/* EDITEUR WYSIWYG INTEGRÉ DANS L'HISTORIQUE DE VUE */}
+                        {activeSynthese.synthese && (
+                            <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-0.5 shadow-2xs">
+                                <button
+                                    type="button"
+                                    onClick={() => execDetailCommand("bold")}
+                                    className="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer font-bold flex items-center justify-center"
+                                    title="Mettre en gras"
+                                >
+                                    <FiBold size={12} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => execDetailCommand("backColor", "#fef08a")}
+                                    className="p-1 text-gray-700 hover:bg-yellow-100 rounded cursor-pointer flex items-center justify-center gap-0.5"
+                                    title="Surligner"
+                                >
+                                    <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => execDetailCommand("removeFormat")}
+                                    className="px-1 text-[10px] text-gray-400 hover:bg-gray-100 rounded cursor-pointer"
+                                >
+                                    Nettoyer
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="p-5">
+                        {activeSynthese.synthese ? (
+                            <div
+                                ref={detailEditorRef}
+                                contentEditable
+                                onInput={(e) => {
+                                    setDetailText(e.target.innerHTML);
+                                    setIsDetailDirty(true);
+                                }}
+                                className="text-sm text-gray-700 outline-none font-sans leading-relaxed space-y-1 min-h-[6rem]"
+                                placeholder="Ajoutez votre contenu ici..."
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center gap-3 py-6 text-center">
+                                <p className="text-sm text-gray-400">Cette synthèse n'a pas encore été générée.</p>
+                                <button
+                                    onClick={handleGenerateFromDetail}
+                                    disabled={generatingDetail}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                    <FiCpu size={14} className={generatingDetail ? "animate-spin" : ""} />
+                                    {generatingDetail ? "Génération en cours..." : "Générer maintenant"}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <FiFileText size={15} className="text-blue-600" />
-                    Ressources associées
+                    <FiFileText size={15} className="text-blue-600" /> Ressources associées
                 </h2>
 
                 {loadingDetail ? (
@@ -670,12 +847,15 @@ export default function SyntheseView() {
         );
     }
 
+    // ───────────────────────────── RENDU : LISTE DES SYNTHÈSES ─────────────────────────────
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-2.5">
                     <IoNewspaperOutline className="text-blue-600" size={26} />
-                    <h1 className="text-2xl font-bold text-blue-600">Mes Synthèses</h1>
+                    <div>
+                        <h1 className="text-2xl font-bold text-blue-600">Mes Synthèses</h1>
+                    </div>
                 </div>
                 <button
                     onClick={openModal}
@@ -688,12 +868,10 @@ export default function SyntheseView() {
             {loadingHistory ? (
                 <div className="text-center py-12 text-gray-400 text-sm">Chargement...</div>
             ) : savedSyntheses.length === 0 ? (
-                <EmptyState
-                    icon={FiFileText}
-                    iconSize={36}
-                    message="Aucune synthèse enregistrée pour le moment."
-                    className="bg-gray-50 border border-dashed border-gray-200 rounded-xl"
-                />
+                <div className="text-center py-16 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-400">
+                    <FiFileText size={36} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Aucune synthèse enregistrée pour le moment.</p>
+                </div>
             ) : (
                 <div className="flex flex-col gap-3">
                     {savedSyntheses.map((item) => {
@@ -720,14 +898,24 @@ export default function SyntheseView() {
                                 </button>
 
                                 <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                    <InlineDeleteConfirm
-                                        isConfirming={confirmDelete === id}
-                                        onRequestConfirm={() => setConfirmDelete(id)}
-                                        onConfirm={() => handleDeleteSynthese(id)}
-                                        onCancel={() => setConfirmDelete(null)}
-                                        label=""
-                                        trashClassName="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500 cursor-pointer"
-                                    />
+                                    {confirmDelete === id ? (
+                                        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-sm">
+                                            <button onClick={() => handleDeleteSynthese(id)} className="text-blue-600 hover:text-red-600 cursor-pointer">
+                                                <FiCheckCircle size={14} />
+                                            </button>
+                                            <button onClick={() => setConfirmDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                                                <FiX size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setConfirmDelete(id)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500 cursor-pointer"
+                                            title="Supprimer"
+                                        >
+                                            <FiTrash2 size={14} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -741,7 +929,8 @@ export default function SyntheseView() {
                     onClose={closeModal}
                     search={search} setSearch={setSearch}
                     availableTypes={availableTypes} selectedTypes={selectedTypes} toggleType={toggleType}
-                    availableTags={availableTags} selectedTagIds={selectedTagIds} toggleTag={toggleTag}
+                    availableTags={availableTags} // <-- Le correctif est ici (pas d'espace !)
+                    selectedTagIds={selectedTagIds} toggleTag={toggleTag}
                     dateFilter={dateFilter} setDateFilter={setDateFilter}
                     resetFilters={resetFilters}
                     hasActiveFilters={selectedTagIds.size > 0 || selectedTypes.size > 0 || !!dateFilter || !!search}
@@ -752,7 +941,7 @@ export default function SyntheseView() {
                     hasGenerated={hasGenerated} isGenerating={isGenerating}
                     onGenerate={handleGenerateSynthese}
                     generatedText={generatedText} setGeneratedText={setGeneratedText}
-                    isSavingDoc={isSavingDoc} onSave={handleSaveDocument} onExportPDF={() => exportSyntheseToPDF(generatedText)}
+                    isSavingDoc={isSavingDoc} onSave={handleSaveDocument} onExportPDF={handleExportPDF}
                 />
             )}
         </div>
