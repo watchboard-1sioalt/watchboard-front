@@ -3,7 +3,7 @@ import { FiFilter } from "react-icons/fi";
 
 const TAG_LIMIT = 8;
 
-export default function TagFilterBar({ tags, selectedIds, onToggle, onClearAll, icon: Icon = FiFilter }) {
+export default function TagFilterBar({ tags, selectedIds, onToggle, onClearAll, icon: Icon = FiFilter, className = "flex flex-wrap items-center gap-2 mb-6" }) {
     const [showAll, setShowAll] = useState(false);
 
     if (!tags || tags.length === 0) return null;
@@ -11,7 +11,7 @@ export default function TagFilterBar({ tags, selectedIds, onToggle, onClearAll, 
     const visible = showAll ? tags : tags.slice(0, TAG_LIMIT);
 
     return (
-        <div className="flex flex-wrap items-center gap-2 mb-6">
+        <div className={className}>
             <Icon size={14} className="text-gray-400 shrink-0" />
             {visible.map(tag => {
                 const active = selectedIds.has(tag.id_tag);

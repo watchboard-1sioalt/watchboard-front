@@ -13,17 +13,18 @@ import DashboardFlux from './DashboardPages/DashboardFlux';
 import SettingsView from "./DashboardPages/SettingsView";
 import DashboardAdmin from './DashboardPages/DashboardAdmin';
 import SynthesesView from './DashboardPages/SyntheseView';
+import { FaRegUser } from "react-icons/fa";
 
 const OPEN_W = "16rem";
 const SLIM_W = "3.5rem";
 const CLOSED_W = "0rem";
 
 export const menuItems = [
-    { name: "Tableau de bord", icon: <FiGrid size={20} />, element: <DashboardHome /> },
-    { name: "Mes ressources", icon: <FiFileText size={20} />, element: <DashboardArticles /> },
+    { name: "Feed", icon: <FiGrid size={20} />, element: <DashboardHome /> },
     { name: "Mes flux", icon: <FiRss size={20} />, element: <DashboardFlux /> },
+    { name: "Mes ressources", icon: <FiFileText size={20} />, element: <DashboardArticles /> },
     { name: "Mes synthèses", icon: <IoNewspaperOutline size={20} />, element: <SynthesesView /> },
-    { name: "Paramètres", icon: <FiSettings size={20} />, element: <SettingsView /> },
+    { name: "Mon compte", icon: <FaRegUser size={20} />, element: <SettingsView /> },
     { name: "Administration", icon: <FiShield size={20} />, admin: true, element: <DashboardAdmin /> }
 ];
 

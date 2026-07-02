@@ -29,7 +29,6 @@ export default function Login() {
                 title: "Connexion réussie !",
                 message: "Redirection vers le dashboard."
             });
-            console.log("Connexion réussie !", data);
         } catch (err) {
             setError(err.message || "Email ou mot de passe incorrect");
             if (err?.message?.includes("Identifiant")) {

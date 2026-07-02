@@ -28,7 +28,7 @@ function SettingsSection({ label, value, type = "text", onSave, disabled = false
                 </div>
                 <Button
                     title={isOpen ? "Annuler" : "Modifier"}
-                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-500 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     disabled={disabled}
                     onClick={() => setIsOpen(!isOpen)}
                 />
@@ -69,7 +69,7 @@ function IdentitySection({ nomInitial, prenomInitial, onSave }) {
                 </div>
                 <Button
                     title={isOpen ? "Annuler" : "Modifier"}
-                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-500 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     onClick={() => setIsOpen(!isOpen)}
                 />
             </div>
@@ -141,7 +141,7 @@ function PasswordSection({ token }) {
                 </div>
                 <Button
                     title={isOpen ? "Annuler" : "Modifier"}
-                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-500 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     onClick={isOpen ? handleCancel : () => setIsOpen(true)}
                 />
             </div>
@@ -275,7 +275,7 @@ function TagsSection({ token }) {
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
                 />
                 <Button
-                    title={creating ? "..." : "Ajouter"}
+                    title={creating ? "..." : "Créer"}
                     style="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-sm hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
                     onClick={handleCreate}
                     disabled={creating || !newTagInput.trim()}
@@ -357,7 +357,7 @@ export default function SettingsView() {
             <div className="max-w-4xl mx-auto">
                 <PageHeader
                     icon={FaTags}
-                    title="Gestion des tags"
+                    title="Mes tags"
                     className="flex items-center justify-between mb-6 mt-5"
                 />
                 <TagsSection token={token} />

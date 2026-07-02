@@ -39,7 +39,6 @@ export default function Register() {
                     title: "Inscription réussie !",
                     message: "Redirection vers la page de connexion"
                 });
-                console.log("Connexion réussie !", data);
 
                 setTimeout(() => {
                     window.location.href = "/";

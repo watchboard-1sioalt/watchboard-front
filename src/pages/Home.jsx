@@ -4,7 +4,7 @@ import { useUser } from "../contexts/UserContext";
 
 export default function Home() {
     const { user } = useUser();
-    const [activeTab, setActiveTab] = useState("Tableau de bord");
+    const [activeTab, setActiveTab] = useState("Feed");
 
     const activeItem = menuItems.find((item) => item.name === activeTab);
 

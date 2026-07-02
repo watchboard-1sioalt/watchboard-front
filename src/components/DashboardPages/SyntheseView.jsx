@@ -9,6 +9,7 @@ import { useToast } from "../Toast/Toast";
 import Cards from "../Cards/Cards";
 import EmptyState from "../EmptyState";
 import InlineDeleteConfirm from "../InlineDeleteConfirm";
+import TagFilterBar from "../TagFilterBar";
 import { TYPE_META } from "../../utils/resourceTypes";
 import { API_BASE_URL as API } from "../../config/api";
 
@@ -64,7 +65,7 @@ function SyntheseModal({
 
                 {step === "select" ? (
                     <>
-                        <div className="px-5 py-3 border-b border-gray-100 flex flex-col gap-2 shrink-0 max-h-28 overflow-y-auto">
+                        <div className="px-5 py-3 border-b border-gray-100 flex flex-col gap-2 shrink-0 overflow-y-auto max-h-56">
                             <div className="relative">
                                 <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
@@ -76,47 +77,8 @@ function SyntheseModal({
                                 />
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                                {availableTypes.length > 1 && (
-                                    <>
-                                        <FiFilter className="text-gray-400" size={12} />
-                                        {availableTypes.map(t => {
-                                            const meta = TYPE_META[t] ?? { label: t, icon: null };
-                                            const active = selectedTypes.has(t);
-                                            return (
-                                                <button
-                                                    key={t}
-                                                    onClick={() => toggleType(t)}
-                                                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full border transition-colors cursor-pointer font-medium ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"}`}
-                                                >
-                                                    {meta.icon}{meta.label}
-                                                </button>
-                                            );
-                                        })}
-                                        <span className="w-px h-3 bg-gray-200 mx-0.5" />
-                                    </>
-                                )}
-
-                                {availableTags.length > 0 && (
-                                    <>
-                                        <FiTag className="text-gray-400" size={12} />
-                                        {availableTags.map(tag => {
-                                            const active = selectedTagIds.has(tag.id_tag);
-                                            return (
-                                                <button
-                                                    key={tag.id_tag}
-                                                    onClick={() => toggleTag(tag.id_tag)}
-                                                    className={`px-2 py-0.5 rounded-full border transition-colors cursor-pointer font-medium ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"}`}
-                                                >
-                                                    {tag.tag}
-                                                </button>
-                                            );
-                                        })}
-                                        <span className="w-px h-3 bg-gray-200 mx-0.5" />
-                                    </>
-                                )}
-
-                                <FiCalendar className="text-gray-400" size={12} />
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <FiCalendar className="text-gray-400 shrink-0" size={12} />
                                 {[
                                     { id: "today", label: "Aujourd'hui" },
                                     { id: "week", label: "Cette semaine" },
@@ -126,20 +88,51 @@ function SyntheseModal({
                                     <button
                                         key={p.id}
                                         onClick={() => setDateFilter(prev => prev === p.id ? null : p.id)}
-                                        className={`px-2 py-0.5 rounded-full border transition-colors cursor-pointer font-medium ${dateFilter === p.id ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-400"}`}
+                                        className={`text-xs font-medium px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${dateFilter === p.id ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"}`}
                                     >
                                         {p.label}
                                     </button>
                                 ))}
-                                {hasActiveFilters && (
-                                    <button
-                                        onClick={resetFilters}
-                                        className="text-gray-400 hover:text-gray-600 cursor-pointer underline"
-                                    >
-                                        Réinitialiser
-                                    </button>
-                                )}
                             </div>
+
+                            {availableTypes.length > 1 && (
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <FiFilter className="text-gray-400 shrink-0" size={12} />
+                                    {availableTypes.map(t => {
+                                        const meta = TYPE_META[t] ?? { label: t, icon: null };
+                                        const active = selectedTypes.has(t);
+                                        return (
+                                            <button
+                                                key={t}
+                                                onClick={() => toggleType(t)}
+                                                className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border transition-colors cursor-pointer ${active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"}`}
+                                            >
+                                                {meta.icon}{meta.label}
+                                            </button>
+                                        );
+                                    })}
+                                    {selectedTypes.size > 0 && (
+                                        <button onClick={() => setSelectedTypes(new Set())} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline">
+                                            Tout afficher
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            <TagFilterBar
+                                tags={availableTags}
+                                selectedIds={selectedTagIds}
+                                onToggle={toggleTag}
+                                onClearAll={() => setSelectedTagIds(new Set())}
+                                icon={FiTag}
+                                className="flex flex-wrap items-center gap-1.5"
+                            />
+
+                            {hasActiveFilters && (
+                                <button onClick={resetFilters} className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline self-start">
+                                    Réinitialiser tous les filtres
+                                </button>
+                            )}
                         </div>
 
                         <div className="px-5 py-4 overflow-y-auto flex-1">
@@ -380,7 +373,7 @@ export default function SyntheseView() {
             else if (dateFilter === "year") { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
             result = result.filter(a => a.created_at && new Date(a.created_at) >= start);
         }
-        return result;
+        return [...result].sort((a, b) => new Date(b.created_at ?? 0) - new Date(a.created_at ?? 0));
     }, [savedArticles, selectedTypes, selectedTagIds, search, dateFilter]);
 
     const resetFilters = () => {
