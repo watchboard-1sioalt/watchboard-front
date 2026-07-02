@@ -15,13 +15,6 @@ import TagFilterBar from "../TagFilterBar";
 import { TYPE_META } from "../../utils/resourceTypes";
 import { API_BASE_URL as API } from "../../config/api";
 
-const TYPE_META = {
-    rss: { label: "RSS", icon: <FiRss size={12} /> },
-    youtube: { label: "YouTube", icon: <FaYoutube size={12} /> },
-    file: { label: "Fichier", icon: <FaFile size={12} /> },
-    url: { label: "Site web", icon: <FiGlobe size={12} /> },
-};
-
 const MIN_RESSOURCES = 2;
 
 const getTags = (r) => r.tags ?? r.tag ?? [];
@@ -784,7 +777,7 @@ export default function SyntheseView() {
                                     onClick={() => execDetailCommand("removeFormat")}
                                     className="px-1 text-[10px] text-gray-400 hover:bg-gray-100 rounded cursor-pointer"
                                 >
-                                    Nettoyer
+                                    Supprimer la mise en forme
                                 </button>
                             </div>
                         )}
