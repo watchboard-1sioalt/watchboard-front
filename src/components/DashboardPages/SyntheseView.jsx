@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { IoNewspaperOutline } from "react-icons/io5";
 import {
     FiCheckCircle, FiCpu, FiPlus, FiArrowLeft, FiCalendar, FiFileText,
-    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRss, FiGlobe, FiTrash2, FiRefreshCw, FiBold
+    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRss, FiGlobe, FiTrash2, FiRefreshCw, FiBold,
+    FiItalic
 } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
@@ -763,6 +764,14 @@ export default function SyntheseView() {
                                     title="Mettre en gras"
                                 >
                                     <FiBold size={12} />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => execDetailCommand("italic")}
+                                    className="p-1 text-gray-700 hover:bg-gray-100 rounded cursor-pointer font-bold flex items-center justify-center"
+                                    title="Mettre en italic"
+                                >
+                                    <FiItalic size={12} />
                                 </button>
                                 <button
                                     type="button"
