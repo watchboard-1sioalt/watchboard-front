@@ -470,8 +470,10 @@ export default function DashboardHome() {
                                                 {artImage ? (
                                                     <img src={artImage} alt="" className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <FiZap size={28} className="text-gray-300" />
+                                                    <div className="w-full h-full flex flex-col items-center justify-center text-blue-600">
+                                                        <FiImage size={48} strokeWidth={1} />
+                                                        <span className="text-xs font-medium text-blue-600">Pas d'image</span>
+
                                                     </div>
                                                 )}
                                                 <div className={`absolute top-3 left-3 flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white ${isYoutube ? "bg-red-500" : "bg-blue-500"}`}>

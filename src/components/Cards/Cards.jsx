@@ -32,7 +32,7 @@ export default function Cards({ couleur, titre, description, date, auteur, image
                 ) : type === "rss" ? (
                     <div className="flex flex-col items-center gap-2 text-blue-600">
                         <FiImage size={48} strokeWidth={1} />
-                        <span className="text-xs font-medium text-blue-600">No image</span>
+                        <span className="text-xs font-medium text-blue-600">Pas d'image</span>
                     </div>
                 ) : (
                     <img
