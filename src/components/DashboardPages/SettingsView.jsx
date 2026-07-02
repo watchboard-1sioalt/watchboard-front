@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import TextInput from "../Inputs/TextInput";
 import Button from "../Inputs/Button";
 import { useUser } from "../../contexts/UserContext";
-import { useToast } from '../Toast/Toast';
-import { FiSettings, FiPlus, FiEdit2 } from "react-icons/fi";
+import { useToast } from "../Toast/Toast";
+import { FiSettings } from "react-icons/fi";
 import { FaTags } from "react-icons/fa";
 import { API_BASE_URL as API } from "../../config/api";
-import Tag from "../Tag";
 import Modal from "../Modal/Modal";
+import PageHeader from "../PageHeader";
+import EditableTag from "../EditableTag";
 
-// 1. Sous-composant pour les sections simples (Mail, Mot de passe) - AGGRANDI
 function SettingsSection({ label, value, type = "text", onSave, disabled = false }) {
     const [isOpen, setIsOpen] = useState(false);
     const [inputValue, setInputValue] = useState(value);
@@ -28,8 +28,7 @@ function SettingsSection({ label, value, type = "text", onSave, disabled = false
                 </div>
                 <Button
                     title={isOpen ? "Annuler" : "Modifier"}
-                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     disabled={disabled}
                     onClick={() => setIsOpen(!isOpen)}
                 />
@@ -51,7 +50,6 @@ function SettingsSection({ label, value, type = "text", onSave, disabled = false
     );
 }
 
-// 2. Sous-composant pour le Nom & Prénom - AGGRANDI
 function IdentitySection({ nomInitial, prenomInitial, onSave }) {
     const [isOpen, setIsOpen] = useState(false);
     const [nom, setNom] = useState(nomInitial);
@@ -71,32 +69,20 @@ function IdentitySection({ nomInitial, prenomInitial, onSave }) {
                 </div>
                 <Button
                     title={isOpen ? "Annuler" : "Modifier"}
-                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
+                    style={`px-4 py-2 text-sm rounded-lg font-medium transition-all ${isOpen ? "bg-red-50 text-red-600 hover:bg-red-100" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     onClick={() => setIsOpen(!isOpen)}
                 />
             </div>
-
             {isOpen && (
                 <div className="flex flex-col gap-4 mt-3 p-4 bg-gray-50 rounded-xl w-full border border-gray-100">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1">
                             <label className="text-xs font-medium text-gray-500 block mb-1">Prénom</label>
-                            <TextInput
-                                onChange={(e) => setPrenom(e.target.value)}
-                                type="text"
-                                value={prenom}
-                                required
-                            />
+                            <TextInput onChange={(e) => setPrenom(e.target.value)} type="text" value={prenom} required />
                         </div>
                         <div className="flex-1">
                             <label className="text-xs font-medium text-gray-500 block mb-1">Nom</label>
-                            <TextInput
-                                onChange={(e) => setNom(e.target.value)}
-                                type="text"
-                                value={nom}
-                                required
-                            />
+                            <TextInput onChange={(e) => setNom(e.target.value)} type="text" value={nom} required />
                         </div>
                     </div>
                     <div className="flex justify-end">
@@ -136,8 +122,7 @@ function PasswordSection({ token }) {
             });
             if (!res.ok) {
                 const data = await res.json();
-                const message = data?.message ?? "Erreur lors du changement de mot de passe.";
-                toast.error({ title: "Erreur", message });
+                toast.error({ title: "Erreur", message: data?.message ?? "Erreur lors du changement de mot de passe." });
             } else {
                 toast.success({ title: "Mot de passe mis à jour" });
                 handleCancel();
@@ -160,27 +145,16 @@ function PasswordSection({ token }) {
                     onClick={isOpen ? handleCancel : () => setIsOpen(true)}
                 />
             </div>
-
             {isOpen && (
                 <div className="flex flex-col gap-4 mt-3 p-4 bg-gray-50 rounded-xl w-full border border-gray-100">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1">
                             <label className="text-xs font-medium text-gray-500 block mb-1">Mot de passe actuel</label>
-                            <TextInput
-                                type="password"
-                                value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                required
-                            />
+                            <TextInput type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
                         </div>
                         <div className="flex-1">
                             <label className="text-xs font-medium text-gray-500 block mb-1">Nouveau mot de passe</label>
-                            <TextInput
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                required
-                            />
+                            <TextInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
                         </div>
                     </div>
                     <div className="flex justify-end">
@@ -197,7 +171,6 @@ function PasswordSection({ token }) {
     );
 }
 
-// 2bis. Gestion des tags personnels de l'utilisateur (créer / éditer / supprimer)
 function TagsSection({ token }) {
     const { toast } = useToast();
     const [tags, setTags] = useState([]);
@@ -210,13 +183,11 @@ function TagsSection({ token }) {
     const fetchTags = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API}/tags/list`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await fetch(`${API}/tags/list`, { headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) throw new Error();
             const data = await res.json();
             const list = Array.isArray(data) ? data : data.data ?? [];
-            // Seuls les tags privés (non publics) de l'utilisateur sont éditables ici
+            // seuls les tags privés de l'utilisateur sont éditables ici
             setTags(list.filter(t => !t.public));
         } catch {
             toast.error({ title: "Erreur", message: "Impossible de charger vos tags." });
@@ -252,7 +223,6 @@ function TagsSection({ token }) {
     const handleEdit = async (id_tag, currentTitle) => {
         const newTitle = prompt("Modifier le nom du tag :", currentTitle);
         if (!newTitle || !newTitle.trim() || newTitle.trim() === currentTitle) return;
-
         try {
             const res = await fetch(`${API}/tags/edit`, {
                 method: "PATCH",
@@ -317,19 +287,12 @@ function TagsSection({ token }) {
                     <p className="text-sm text-gray-400 italic">Chargement...</p>
                 ) : tags.length > 0 ? (
                     tags.map(tag => (
-                        <div key={tag.id_tag} className="flex items-center gap-1 group relative">
-                            <Tag
-                                title={tag.tag}
-                                onRemove={(e) => handleDelete(tag.id_tag, tag.tag, e)}
-                            />
-                            <button
-                                onClick={() => handleEdit(tag.id_tag, tag.tag)}
-                                className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-blue-500 rounded bg-white shadow-sm border border-gray-100 transition-all absolute -top-3 -right-2 z-10 cursor-pointer"
-                                title="Modifier"
-                            >
-                                <FiEdit2 size={10} />
-                            </button>
-                        </div>
+                        <EditableTag
+                            key={tag.id_tag}
+                            title={tag.tag}
+                            onRemove={(e) => handleDelete(tag.id_tag, tag.tag, e)}
+                            onEdit={() => handleEdit(tag.id_tag, tag.tag)}
+                        />
                     ))
                 ) : (
                     <p className="text-sm text-gray-400 italic">Vous n'avez pas encore de tag personnel.</p>
@@ -340,14 +303,12 @@ function TagsSection({ token }) {
                 isOpen={!!deleteTarget}
                 onClose={() => setDeleteTarget(null)}
                 title="Supprimer le tag"
-                actions={[
-                    {
-                        label: deleting ? "Suppression..." : "Supprimer",
-                        variant: "danger",
-                        onClick: confirmDelete,
-                        loading: deleting,
-                    },
-                ]}
+                actions={[{
+                    label: deleting ? "Suppression..." : "Supprimer",
+                    variant: "danger",
+                    onClick: confirmDelete,
+                    loading: deleting,
+                }]}
             >
                 <p className="text-sm text-gray-600">
                     Voulez-vous vraiment supprimer le tag « <strong>{deleteTarget?.tag}</strong> » ? Cette action est irréversible.
@@ -357,19 +318,18 @@ function TagsSection({ token }) {
     );
 }
 
-// 3. Composant principal - CENTRÉ ET ÉLARGI
 export default function SettingsView() {
     const { toast } = useToast();
     const { user, token } = useUser();
-    const [email, setEmail] = useState(user?.email || "");
+    const [email] = useState(user?.email || "");
     const [nom, setNom] = useState(user?.nom || "");
     const [prenom, setPrenom] = useState(user?.prenom || "");
 
     const handleSaveIdentity = async (identityData) => {
         const res = await fetch(`${API}/auth/me`, {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            method: 'PUT',
-            body: JSON.stringify({ nom: identityData.nom, prenom: identityData.prenom })
+            method: "PUT",
+            body: JSON.stringify({ nom: identityData.nom, prenom: identityData.prenom }),
         });
         if (!res.ok) {
             toast.error({ title: "Une erreur est survenue", message: "Erreur lors de la mise à jour de votre compte" });
@@ -382,40 +342,24 @@ export default function SettingsView() {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                    <FiSettings className="text-blue-600" size={22} />
-                    <h1 className="text-2xl font-semibold text-blue-600">Paramètres</h1>
-                </div>
-            </div>
+            <PageHeader icon={FiSettings} title="Paramètres" />
+
             <div className="w-full max-w-4xl">
-
                 <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden w-full">
-
-                    <SettingsSection
-                        label="Votre mail"
-                        value={email}
-                        type="email"
-                        disabled={true}
-                    />
-
-                    <IdentitySection
-                        nomInitial={nom}
-                        prenomInitial={prenom}
-                        onSave={handleSaveIdentity}
-                    />
-
+                    <SettingsSection label="Votre mail" value={email} type="email" disabled={true} />
+                    <IdentitySection nomInitial={nom} prenomInitial={prenom} onSave={handleSaveIdentity} />
                     <PasswordSection token={token} />
                 </div>
             </div>
+
             <div className="mt-5 h-0.5 w-full bg-gray-200" />
+
             <div className="max-w-4xl mx-auto">
-                <div className="flex items-center justify-between mb-6 mt-5">
-                    <div className="flex items-center gap-2">
-                        <FaTags className="text-blue-600" size={22} />
-                        <h1 className="text-2xl font-semibold text-blue-600">Gestion des tags</h1>
-                    </div>
-                </div>
+                <PageHeader
+                    icon={FaTags}
+                    title="Gestion des tags"
+                    className="flex items-center justify-between mb-6 mt-5"
+                />
                 <TagsSection token={token} />
             </div>
         </div>

@@ -2,21 +2,15 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { IoNewspaperOutline } from "react-icons/io5";
 import {
     FiCheckCircle, FiCpu, FiPlus, FiArrowLeft, FiCalendar, FiFileText,
-    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRss, FiGlobe, FiTrash2, FiRefreshCw
+    FiDownload, FiSave, FiTag, FiSearch, FiX, FiFilter, FiRefreshCw
 } from "react-icons/fi";
-import { FaYoutube } from "react-icons/fa";
-import { FaFile } from "react-icons/fa6";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
 import Cards from "../Cards/Cards";
+import EmptyState from "../EmptyState";
+import InlineDeleteConfirm from "../InlineDeleteConfirm";
+import { TYPE_META } from "../../utils/resourceTypes";
 import { API_BASE_URL as API } from "../../config/api";
-
-const TYPE_META = {
-    rss: { label: "RSS", icon: <FiRss size={12} /> },
-    youtube: { label: "YouTube", icon: <FaYoutube size={12} /> },
-    file: { label: "Fichier", icon: <FaFile size={12} /> },
-    url: { label: "Site web", icon: <FiGlobe size={12} /> },
-};
 
 const MIN_RESSOURCES = 2;
 
@@ -31,7 +25,6 @@ const syntheseLabel = (s) => {
 
 function SyntheseModal({
     step, onClose,
-    // Sélection
     search, setSearch,
     availableTypes, selectedTypes, toggleType,
     availableTags, selectedTagIds, toggleTag,
@@ -40,7 +33,6 @@ function SyntheseModal({
     loadingArticles, filteredArticles,
     selectedArticles, toggleSelectArticle,
     onConfirmSelection, isSubmittingSelection,
-    // Génération / édition
     onBackToSelect,
     hasGenerated, isGenerating, onGenerate,
     generatedText, setGeneratedText,
@@ -160,7 +152,6 @@ function SyntheseModal({
                                     {filteredArticles.map((article, i) => {
                                         const key = ressourceKey(article) ?? i;
                                         const isSelected = selectedArticles.some(a => ressourceKey(a) === key);
-
                                         return (
                                             <div
                                                 key={key}
@@ -240,7 +231,6 @@ function SyntheseModal({
                                         <FiCpu className="text-blue-600" size={18} />
                                         <h3 className="text-sm font-semibold">Synthèse générée</h3>
                                     </div>
-
                                     <textarea
                                         value={generatedText}
                                         onChange={(e) => setGeneratedText(e.target.value)}
@@ -305,41 +295,29 @@ export default function SyntheseView() {
     const authHeaders = { Authorization: `Bearer ${token}` };
     const jsonHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
-    // Navigation (page de fond)
-    const [viewMode, setViewMode] = useState("list"); // "list" | "detail"
-
-    // États des données
+    const [viewMode, setViewMode] = useState("list");
     const [savedSyntheses, setSavedSyntheses] = useState([]);
     const [savedArticles, setSavedArticles] = useState([]);
     const [loadingArticles, setLoadingArticles] = useState(false);
     const [loadingHistory, setLoadingHistory] = useState(true);
-
-    // Détail d'une synthèse consultée
     const [activeSynthese, setActiveSynthese] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [generatingDetail, setGeneratingDetail] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(null);
-
-    // Modal de création (sélection -> génération -> édition)
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalStep, setModalStep] = useState("select"); // "select" | "edit"
+    const [modalStep, setModalStep] = useState("select");
     const [currentSyntheseId, setCurrentSyntheseId] = useState(null);
     const [isSubmittingSelection, setIsSubmittingSelection] = useState(false);
-
-    // Filtres (dans la popup de sélection)
     const [search, setSearch] = useState("");
     const [selectedTagIds, setSelectedTagIds] = useState(new Set());
     const [selectedTypes, setSelectedTypes] = useState(new Set());
-    const [dateFilter, setDateFilter] = useState(null); // null | "today" | "week" | "month" | "year"
-
-    // Sélection, Édition & Sauvegarde
+    const [dateFilter, setDateFilter] = useState(null);
     const [selectedArticles, setSelectedArticles] = useState([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSavingDoc, setIsSavingDoc] = useState(false);
     const [generatedText, setGeneratedText] = useState("");
     const [hasGenerated, setHasGenerated] = useState(false);
 
-    // 1. Charger l'historique des synthèses
     const fetchSavedSyntheses = useCallback(async () => {
         setLoadingHistory(true);
         try {
@@ -354,7 +332,6 @@ export default function SyntheseView() {
         }
     }, [token]);
 
-    // 2. Charger UNIQUEMENT les articles enregistrés (Ressources)
     const fetchSavedArticlesOnly = useCallback(async () => {
         setLoadingArticles(true);
         try {
@@ -373,7 +350,6 @@ export default function SyntheseView() {
         if (token) fetchSavedSyntheses();
     }, [token, fetchSavedSyntheses]);
 
-    // Déclencheurs de filtres (comme dans "Mes ressources")
     const availableTags = useMemo(() => {
         const map = new Map();
         savedArticles.forEach(art => getTags(art).forEach(t => map.set(t.id_tag, t)));
@@ -386,15 +362,8 @@ export default function SyntheseView() {
 
     const filteredArticles = useMemo(() => {
         let result = savedArticles;
-
-        if (selectedTypes.size > 0) {
-            result = result.filter(a => selectedTypes.has(a.type));
-        }
-
-        if (selectedTagIds.size > 0) {
-            result = result.filter(art => getTags(art).some(t => selectedTagIds.has(t.id_tag)));
-        }
-
+        if (selectedTypes.size > 0) result = result.filter(a => selectedTypes.has(a.type));
+        if (selectedTagIds.size > 0) result = result.filter(art => getTags(art).some(t => selectedTagIds.has(t.id_tag)));
         if (search.trim()) {
             const q = search.trim().toLowerCase();
             result = result.filter(art =>
@@ -402,7 +371,6 @@ export default function SyntheseView() {
                 (art.resume || art.description || "").toLowerCase().includes(q)
             );
         }
-
         if (dateFilter) {
             const now = new Date();
             const start = new Date();
@@ -412,7 +380,6 @@ export default function SyntheseView() {
             else if (dateFilter === "year") { start.setMonth(0, 1); start.setHours(0, 0, 0, 0); }
             result = result.filter(a => a.created_at && new Date(a.created_at) >= start);
         }
-
         return result;
     }, [savedArticles, selectedTypes, selectedTagIds, search, dateFilter]);
 
@@ -439,8 +406,6 @@ export default function SyntheseView() {
         if (currentSyntheseId) fetchSavedSyntheses();
     };
 
-    // Étape 1 du CRUD : on CRÉE (ou met à jour) la synthèse avec ses ressources attachées,
-    // AVANT de pouvoir la générer (l'API exige que la synthèse existe déjà côté serveur).
     const confirmSelection = async () => {
         if (selectedArticles.length < MIN_RESSOURCES) return;
         setIsSubmittingSelection(true);
@@ -497,7 +462,6 @@ export default function SyntheseView() {
         });
     };
 
-    // Étape 2 du CRUD : la synthèse existe déjà (currentSyntheseId), on demande sa génération IA.
     const handleGenerateSynthese = async () => {
         if (!currentSyntheseId) return;
         setIsGenerating(true);
@@ -508,7 +472,6 @@ export default function SyntheseView() {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.message || "L'API a renvoyé une erreur lors de la génération.");
-
             setGeneratedText(data.synthese || "");
             setHasGenerated(true);
             toast.success({ title: "Synthèse générée avec succès !" });
@@ -519,7 +482,6 @@ export default function SyntheseView() {
         }
     };
 
-    // Étape 3 du CRUD : on enregistre les éventuelles modifications manuelles du texte généré.
     const handleSaveDocument = async () => {
         if (!currentSyntheseId || !generatedText.trim()) return;
         setIsSavingDoc(true);
@@ -530,7 +492,6 @@ export default function SyntheseView() {
                 body: JSON.stringify({ synthese: generatedText }),
             });
             if (!res.ok) throw new Error("Erreur lors de la sauvegarde sur le serveur.");
-
             toast.success({ title: "Synthèse enregistrée" });
             fetchSavedSyntheses();
             setModalOpen(false);
@@ -566,8 +527,6 @@ export default function SyntheseView() {
         `);
         printWindow.document.close();
     };
-
-    const handleExportPDF = () => exportSyntheseToPDF(generatedText);
 
     const handleDeleteSynthese = async (id) => {
         try {
@@ -620,7 +579,6 @@ export default function SyntheseView() {
                 setActiveSynthese(data);
             }
         } catch {
-            // on garde l'item déjà disponible depuis la liste
         } finally {
             setLoadingDetail(false);
         }
@@ -628,7 +586,6 @@ export default function SyntheseView() {
 
     const detailRessources = activeSynthese?.ressources ?? [];
 
-    // ───────────────────────────── Rendu : Détail d'une synthèse ─────────────────────────────
     if (viewMode === "detail" && activeSynthese) {
         const id = syntheseKey(activeSynthese);
         return (
@@ -653,25 +610,15 @@ export default function SyntheseView() {
                             <FiDownload size={16} />
                         </button>
                     )}
-                    {confirmDelete === id ? (
-                        <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-xs text-gray-500">Confirmer la suppression ?</span>
-                            <button onClick={() => handleDeleteSynthese(id)} className="text-blue-600 hover:text-red-600 cursor-pointer">
-                                <FiCheckCircle size={15} />
-                            </button>
-                            <button onClick={() => setConfirmDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                                <FiX size={15} />
-                            </button>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setConfirmDelete(id)}
-                            className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
-                            title="Supprimer cette synthèse"
-                        >
-                            <FiTrash2 size={16} />
-                        </button>
-                    )}
+                    <InlineDeleteConfirm
+                        isConfirming={confirmDelete === id}
+                        onRequestConfirm={() => setConfirmDelete(id)}
+                        onConfirm={() => handleDeleteSynthese(id)}
+                        onCancel={() => setConfirmDelete(null)}
+                        wrapperClassName="flex items-center gap-2 shrink-0"
+                        trashClassName="text-gray-300 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                        iconSize={15}
+                    />
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs mb-8">
@@ -730,15 +677,12 @@ export default function SyntheseView() {
         );
     }
 
-    // ───────────────────────────── Rendu : Historique ─────────────────────────────
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-2.5">
                     <IoNewspaperOutline className="text-blue-600" size={26} />
-                    <div>
-                        <h1 className="text-2xl font-bold text-blue-600">Mes Synthèses</h1>
-                    </div>
+                    <h1 className="text-2xl font-bold text-blue-600">Mes Synthèses</h1>
                 </div>
                 <button
                     onClick={openModal}
@@ -751,10 +695,12 @@ export default function SyntheseView() {
             {loadingHistory ? (
                 <div className="text-center py-12 text-gray-400 text-sm">Chargement...</div>
             ) : savedSyntheses.length === 0 ? (
-                <div className="text-center py-16 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-gray-400">
-                    <FiFileText size={36} className="mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Aucune synthèse enregistrée pour le moment.</p>
-                </div>
+                <EmptyState
+                    icon={FiFileText}
+                    iconSize={36}
+                    message="Aucune synthèse enregistrée pour le moment."
+                    className="bg-gray-50 border border-dashed border-gray-200 rounded-xl"
+                />
             ) : (
                 <div className="flex flex-col gap-3">
                     {savedSyntheses.map((item) => {
@@ -781,24 +727,14 @@ export default function SyntheseView() {
                                 </button>
 
                                 <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                    {confirmDelete === id ? (
-                                        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1 shadow-sm">
-                                            <button onClick={() => handleDeleteSynthese(id)} className="text-blue-600 hover:text-red-600 cursor-pointer">
-                                                <FiCheckCircle size={14} />
-                                            </button>
-                                            <button onClick={() => setConfirmDelete(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                                                <FiX size={14} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => setConfirmDelete(id)}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500 cursor-pointer"
-                                            title="Supprimer"
-                                        >
-                                            <FiTrash2 size={14} />
-                                        </button>
-                                    )}
+                                    <InlineDeleteConfirm
+                                        isConfirming={confirmDelete === id}
+                                        onRequestConfirm={() => setConfirmDelete(id)}
+                                        onConfirm={() => handleDeleteSynthese(id)}
+                                        onCancel={() => setConfirmDelete(null)}
+                                        label=""
+                                        trashClassName="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-red-500 cursor-pointer"
+                                    />
                                 </div>
                             </div>
                         );
@@ -823,7 +759,7 @@ export default function SyntheseView() {
                     hasGenerated={hasGenerated} isGenerating={isGenerating}
                     onGenerate={handleGenerateSynthese}
                     generatedText={generatedText} setGeneratedText={setGeneratedText}
-                    isSavingDoc={isSavingDoc} onSave={handleSaveDocument} onExportPDF={handleExportPDF}
+                    isSavingDoc={isSavingDoc} onSave={handleSaveDocument} onExportPDF={() => exportSyntheseToPDF(generatedText)}
                 />
             )}
         </div>

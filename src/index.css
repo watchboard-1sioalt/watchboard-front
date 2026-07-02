@@ -12,10 +12,6 @@
   --color-secondary: rgb(33, 150, 243);
 }
 
-* {
-  transition: .2s;
-}
-
 body {
   margin: 0;
 }

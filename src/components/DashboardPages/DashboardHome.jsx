@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
-import { FiZap, FiRss, FiExternalLink, FiPlus, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import { FiZap, FiRss, FiExternalLink, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import Modal from "../Modal/Modal";
+import ShareModal from "../ShareModal";
 import SaveButton from "../Inputs/SaveButton";
 import SubscribeButton from "../Inputs/SubscribeButton";
 import ShareButton from "../Inputs/ShareButton";
@@ -14,7 +14,6 @@ export default function DashboardHome() {
     const { token, user } = useUser();
     const { toast } = useToast();
 
-    // États de la timeline globale et pagination locale
     const [allArticles, setAllArticles] = useState([]);
     const [displayedArticles, setDisplayedArticles] = useState([]);
     const [page, setPage] = useState(1);
@@ -23,16 +22,13 @@ export default function DashboardHome() {
     const [hasFeeds, setHasFeeds] = useState(true);
     const [isTimelineEmpty, setIsTimelineEmpty] = useState(false);
 
-    // Cartographie des abonnements : { url_normalisee: id_flux }
     const [subscribedFeeds, setSubscribedFeeds] = useState({});
 
-    // Compteur d'articles consultés
     const [seenCount, setSeenCount] = useState(() => {
         const saved = localStorage.getItem("watchboard_seen_articles");
         return saved ? JSON.parse(saved).length : 0;
     });
 
-    // États de la modale de partage
     const [shareModal, setShareModal] = useState(false);
     const [shareTarget, setShareTarget] = useState(null);
     const [shareEmail, setShareEmail] = useState("");
@@ -55,7 +51,6 @@ export default function DashboardHome() {
             .replace(/\/$/, "");
     };
 
-    // Extracteur d'images multi-sources pour blinder l'affichage contre les variations d'API
     const getArticleImage = (article) => {
         if (!article) return null;
         if (typeof article.image === "string" && article.image.trim() !== "") return article.image;
@@ -67,7 +62,6 @@ export default function DashboardHome() {
         return null;
     };
 
-    // 1. MARQUAGE DES ARTICLES LUS
     useEffect(() => {
         viewedObserver.current = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -90,7 +84,6 @@ export default function DashboardHome() {
         return () => viewedObserver.current?.disconnect();
     }, []);
 
-    // 2. SCROLL INFINI LOCAL
     const lastArticleRef = useCallback(node => {
         if (loading || !hasFeeds || isTimelineEmpty) return;
         if (observer.current) observer.current.disconnect();
@@ -112,7 +105,6 @@ export default function DashboardHome() {
         { name: "Clubic", url: "https://www.clubic.com/feed/news.rss", type: "rss", desc: "Toute l'actualité du numérique, du logiciel, du matériel et des tendances." }
     ];
 
-    // 3. CHARGEMENT ET SYNCHRONISATION DU FLUX
     const fetchTimelineDiscover = useCallback(async () => {
         setLoading(true);
         try {
@@ -198,7 +190,6 @@ export default function DashboardHome() {
 
             setIsTimelineEmpty(false);
 
-            // Tri avec le nouvel extracteur d'image unifié
             const withPhotos = uniqueUnseenArticles.filter(art => !!getArticleImage(art));
             const withoutPhotos = uniqueUnseenArticles.filter(art => !getArticleImage(art));
             const prioritizedArticles = [...withPhotos, ...withoutPhotos];
@@ -207,8 +198,7 @@ export default function DashboardHome() {
             setAllArticles(prioritizedArticles);
             setDisplayedArticles(prioritizedArticles.slice(0, ARTICLES_PER_PAGE));
             setHasMore(prioritizedArticles.length > ARTICLES_PER_PAGE);
-        } catch (error) {
-            console.error("Erreur de chargement du flux discover :", error);
+        } catch {
             setHasFeeds(false);
         } finally {
             setLoading(false);
@@ -297,7 +287,6 @@ export default function DashboardHome() {
             const urlKey = getArticleUrl(shareTarget);
             let ressourceId = savedMap[urlKey];
 
-            // 1. Si la ressource n'est pas encore enregistrée en BDD
             if (!ressourceId) {
                 const saveRes = await fetch(`${API}/ressources/from-rss`, {
                     method: "POST",
@@ -314,23 +303,21 @@ export default function DashboardHome() {
 
                 const ressource = await saveRes.json();
 
-                // CORRECTION ACCÈS CLÉ PRIMAIRE : id_ressource ou id selon le retour API
+                // id_ressource ou id selon le retour API
                 ressourceId = ressource.id_ressource || ressource.id;
 
                 if (!ressourceId) {
                     throw new Error("L'API n'a pas renvoyé d'identifiant de ressource valide.");
                 }
 
-                // Enregistrement dans le state local pour éviter de ré-indexer au prochain clic
                 setSavedMap(prev => ({ ...prev, [urlKey]: ressourceId }));
             }
 
-            // SÉCURITÉ EN AMONT : On bloque si l'ID est corrompu ou vaut littéralement "undefined"
+            // garde contre l'ID "undefined" renvoyé par l'API
             if (!ressourceId || ressourceId === "undefined") {
                 throw new Error("Identifiant de ressource invalide détecté avant l'envoi.");
             }
 
-            // 2. Envoi de la requête de partage avec un ID garanti
             const res = await fetch(`${API}/ressources/${ressourceId}/share`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -425,7 +412,6 @@ export default function DashboardHome() {
     return (
         <div className="max-w-5xl mx-auto p-2">
 
-            {/* En-tête de page */}
             <div className="mb-6 flex justify-between items-center">
                 <div>
                     <h1 className="text-xl font-bold text-gray-900 tracking-tight">
@@ -455,10 +441,8 @@ export default function DashboardHome() {
                 </div>
             </div>
 
-            {/* Grille Principale */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-                {/* Colonne gauche */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     {displayedArticles.length > 0 ? (
                         <div className="flex flex-col gap-6">
@@ -468,7 +452,6 @@ export default function DashboardHome() {
                                     const urlKey = getArticleUrl(article);
                                     const isSaved = !!savedMap[urlKey];
 
-                                    // Utilisation du nouvel extracteur sécurisé
                                     const artImage = getArticleImage(article);
                                     const isYoutube = (article.link || article.url || "").includes("youtube.com");
 
@@ -486,7 +469,6 @@ export default function DashboardHome() {
                                             transition={{ type: "spring", stiffness: 320, damping: 26 }}
                                             className="w-full h-[480px] bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between"
                                         >
-                                            {/* Image 50% */}
                                             <div className="w-full h-1/2 bg-gray-50 relative overflow-hidden shrink-0">
                                                 {artImage ? (
                                                     <img src={artImage} alt="" className="w-full h-full object-cover" />
@@ -501,7 +483,6 @@ export default function DashboardHome() {
                                                 </div>
                                             </div>
 
-                                            {/* Texte 50% & Actions */}
                                             <div className="p-4 h-1/2 flex flex-col justify-between overflow-hidden bg-white shrink-0">
                                                 <div className="space-y-1">
                                                     <h2 className="text-md font-extrabold text-gray-900 tracking-tight line-clamp-2">
@@ -599,7 +580,6 @@ export default function DashboardHome() {
                     )}
                 </div>
 
-                {/* Suggestions latérales */}
                 <div className="lg:block lg:col-span-1">
                     <div className="flex flex-col gap-4 sticky top-4">
                         <div className="pb-1 px-1">
@@ -640,33 +620,15 @@ export default function DashboardHome() {
                 </div>
             </div>
 
-            {/* MODALE DE PARTAGE EMAIL */}
-            <Modal
+            <ShareModal
                 isOpen={shareModal}
                 onClose={() => setShareModal(false)}
                 title={`Partager « ${shareTarget?.title || shareTarget?.nom_original || shareTarget?.url || ""} »`}
-                actions={[
-                    {
-                        label: sharing ? "Envoi..." : "Partager",
-                        variant: "primary",
-                        onClick: handleShare,
-                        loading: sharing,
-                    },
-                ]}
-            >
-                <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium text-gray-700">Adresse e-mail du destinataire</label>
-                    <input
-                        type="email"
-                        value={shareEmail}
-                        onChange={e => setShareEmail(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && handleShare()}
-                        placeholder="utilisateur@exemple.com"
-                        autoFocus
-                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 transition-colors bg-white"
-                    />
-                </div>
-            </Modal>
+                email={shareEmail}
+                onEmailChange={e => setShareEmail(e.target.value)}
+                onShare={handleShare}
+                sharing={sharing}
+            />
         </div>
     );
 }

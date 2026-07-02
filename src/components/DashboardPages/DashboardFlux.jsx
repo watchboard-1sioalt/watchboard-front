@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FiRss, FiPlus, FiTrash2, FiEdit2, FiCheck, FiX, FiExternalLink, FiArrowLeft, FiRefreshCw, FiTag, FiGlobe } from "react-icons/fi";
+import { FiRss, FiPlus, FiEdit2, FiCheck, FiX, FiExternalLink, FiArrowLeft, FiRefreshCw, FiTag, FiGlobe } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { useUser } from "../../contexts/UserContext";
 import { useToast } from "../Toast/Toast";
@@ -7,13 +7,16 @@ import Tag from "../Tag";
 import Cards from "../Cards/Cards";
 import TagPickerModal from "../Modal/TagPickerModal";
 import SearchBarView from "../SearchBarView";
+import PageHeader from "../PageHeader";
+import TagFilterBar from "../TagFilterBar";
+import EmptyState from "../EmptyState";
+import InlineDeleteConfirm from "../InlineDeleteConfirm";
 import { API_BASE_URL as API } from "../../config/api";
 
 function FeedArticlesView({ feed, token, onBack }) {
     const { toast } = useToast();
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
-    // url -> id_ressource pour les articles déjà enregistrés ou enregistrés dans la session
     const [savedMap, setSavedMap] = useState({});
 
     const articleKey = (article) => article.link || article.url || article.id;
@@ -134,7 +137,6 @@ function FeedArticlesView({ feed, token, onBack }) {
                 {feed.url}
             </a>
 
-
             {feed.tags && feed.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-6">
                     {feed.tags.map(tag => (
@@ -142,7 +144,6 @@ function FeedArticlesView({ feed, token, onBack }) {
                     ))}
                 </div>
             )}
-
 
             {loading ? (
                 <div className="text-center py-20 text-gray-400 text-sm">Chargement des articles...</div>
@@ -183,26 +184,20 @@ export default function DashboardFlux() {
     const [feeds, setFeeds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedFeed, setSelectedFeed] = useState(null);
-
     const [showAddForm, setShowAddForm] = useState(false);
-    const [newType, setNewType] = useState("rss"); // "rss" | "youtube"
+    const [newType, setNewType] = useState("rss");
     const [newUrl, setNewUrl] = useState("");
     const [newName, setNewName] = useState("");
     const [adding, setAdding] = useState(false);
-
     const [editing, setEditing] = useState(null);
     const [editName, setEditName] = useState("");
     const [saving, setSaving] = useState(false);
-
     const [confirmDelete, setConfirmDelete] = useState(null);
-
     const [tagModal, setTagModal] = useState(false);
     const [tagTarget, setTagTarget] = useState(null);
-
     const [search, setSearch] = useState("");
     const [selectedTagIds, setSelectedTagIds] = useState(new Set());
-    const [showAllTags, setShowAllTags] = useState(false);
-    const TAG_LIMIT = 8;
+    const [allTags, setAllTags] = useState([]);
 
     const authHeaders = useCallback(() => ({
         "Content-Type": "application/json",
@@ -224,8 +219,6 @@ export default function DashboardFlux() {
 
     useEffect(() => { fetchFeeds(); }, [fetchFeeds]);
 
-    const [allTags, setAllTags] = useState([]);
-
     useEffect(() => {
         fetch(`${API}/tags/list`, { headers: { Authorization: `Bearer ${token}` } })
             .then(r => r.ok ? r.json() : [])
@@ -243,9 +236,7 @@ export default function DashboardFlux() {
     const filteredFeeds = useMemo(() => {
         let result = feeds;
         if (selectedTagIds.size > 0) {
-            result = result.filter(f =>
-                (f.tags ?? []).some(t => selectedTagIds.has(t.id_tag))
-            );
+            result = result.filter(f => (f.tags ?? []).some(t => selectedTagIds.has(t.id_tag)));
         }
         if (search.trim()) {
             const q = search.trim().toLowerCase();
@@ -273,7 +264,6 @@ export default function DashboardFlux() {
         try {
             const body = { url: newUrl };
             if (newName.trim()) body.name = newName.trim();
-
             const res = await fetch(`${API}/feeds`, {
                 method: "POST",
                 headers: authHeaders(),
@@ -351,9 +341,7 @@ export default function DashboardFlux() {
 
     const handleTagAdded = (tag) => {
         setFeeds(prev => prev.map(f =>
-            f.id_fluxrss === tagTarget
-                ? { ...f, tags: [...(f.tags ?? []), tag] }
-                : f
+            f.id_fluxrss === tagTarget ? { ...f, tags: [...(f.tags ?? []), tag] } : f
         ));
         toast.success({ title: "Tag ajouté" });
     };
@@ -368,11 +356,7 @@ export default function DashboardFlux() {
 
     return (
         <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                    <FiRss className="text-blue-600" size={22} />
-                    <h1 className="text-2xl font-semibold text-blue-600">Vos flux RSS</h1>
-                </div>
+            <PageHeader icon={FiRss} title="Vos flux RSS">
                 <button
                     onClick={() => setShowAddForm(v => !v)}
                     className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium cursor-pointer"
@@ -380,7 +364,7 @@ export default function DashboardFlux() {
                     <FiPlus size={16} />
                     Ajouter un flux
                 </button>
-            </div>
+            </PageHeader>
 
             {!loading && feeds.length > 0 && (
                 <div className="mb-4">
@@ -393,48 +377,20 @@ export default function DashboardFlux() {
                 </div>
             )}
 
-            {!loading && availableTags.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 mb-6">
-                    <FiTag size={14} className="text-gray-400 shrink-0" />
-                    {(showAllTags ? availableTags : availableTags.slice(0, TAG_LIMIT)).map(tag => {
-                        const active = selectedTagIds.has(tag.id_tag);
-                        return (
-                            <button
-                                key={tag.id_tag}
-                                onClick={() => toggleTag(tag.id_tag)}
-                                className={`text-xs font-medium px-3 py-1 rounded-full border transition-colors cursor-pointer ${active
-                                    ? "bg-blue-600 text-white border-blue-600"
-                                    : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
-                                    }`}
-                            >
-                                {tag.tag}
-                            </button>
-                        );
-                    })}
-                    {availableTags.length > TAG_LIMIT && (
-                        <button
-                            onClick={() => setShowAllTags(v => !v)}
-                            className="text-xs text-blue-500 hover:text-blue-700 cursor-pointer font-medium"
-                        >
-                            {showAllTags ? "Afficher moins" : `Afficher plus (${availableTags.length - TAG_LIMIT})`}
-                        </button>
-                    )}
-                    {selectedTagIds.size > 0 && (
-                        <button
-                            onClick={() => setSelectedTagIds(new Set())}
-                            className="text-xs text-gray-400 hover:text-gray-600 cursor-pointer underline"
-                        >
-                            Tout effacer
-                        </button>
-                    )}
-                </div>
+            {!loading && (
+                <TagFilterBar
+                    tags={availableTags}
+                    selectedIds={selectedTagIds}
+                    onToggle={toggleTag}
+                    onClearAll={() => setSelectedTagIds(new Set())}
+                    icon={FiTag}
+                />
             )}
 
             {showAddForm && (
                 <form onSubmit={handleAdd} className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col gap-3">
                     <h2 className="text-sm font-semibold text-blue-800">Nouveau flux</h2>
 
-                    {/* Sélecteur de type */}
                     <div className="flex gap-2">
                         <button
                             type="button"
@@ -501,22 +457,18 @@ export default function DashboardFlux() {
             {loading ? (
                 <div className="text-center py-16 text-gray-400 text-sm">Chargement...</div>
             ) : feeds.length === 0 ? (
-                <div className="text-center py-16 text-gray-400">
-                    <FiRss size={40} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Vous n'avez pas encore de flux RSS.</p>
-                    <p className="text-xs mt-1">Ajoutez votre premier flux avec le bouton ci-dessus.</p>
-                </div>
+                <EmptyState
+                    icon={FiRss}
+                    message="Vous n'avez pas encore de flux RSS."
+                    subMessage="Ajoutez votre premier flux avec le bouton ci-dessus."
+                />
             ) : filteredFeeds.length === 0 ? (
-                <div className="text-center py-16 text-gray-400">
-                    <FiTag size={36} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Aucun flux ne correspond à votre recherche.</p>
-                    <button
-                        onClick={() => { setSelectedTagIds(new Set()); setSearch(""); }}
-                        className="text-xs text-blue-500 hover:text-blue-700 mt-2 cursor-pointer underline"
-                    >
-                        Réinitialiser les filtres
-                    </button>
-                </div>
+                <EmptyState
+                    icon={FiTag}
+                    iconSize={36}
+                    message="Aucun flux ne correspond à votre recherche."
+                    action={{ label: "Réinitialiser les filtres", onClick: () => { setSelectedTagIds(new Set()); setSearch(""); } }}
+                />
             ) : (
                 <div className="flex flex-col gap-3">
                     {filteredFeeds.map(feed => (
@@ -526,7 +478,6 @@ export default function DashboardFlux() {
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
-
                                     {editing === feed.id_fluxrss ? (
                                         <div className="flex items-center gap-2 mb-1">
                                             <input
@@ -567,10 +518,8 @@ export default function DashboardFlux() {
                                                     onError={e => { e.currentTarget.style.display = "none"; }}
                                                 />
                                             ) : feed.url.includes("youtube") ? (
-
                                                 <FaYoutube className="text-red-600 shrink-0" size={18} />
                                             ) : (
-
                                                 <FiRss className="text-blue-600 shrink-0" size={18} />
                                             )}
                                             <button
@@ -611,6 +560,7 @@ export default function DashboardFlux() {
                                         </div>
                                     )}
                                 </div>
+
                                 <div className="shrink-0 flex items-center gap-2">
                                     <button
                                         onClick={() => setSelectedFeed(feed)}
@@ -627,33 +577,15 @@ export default function DashboardFlux() {
                                         <FiTag size={16} />
                                     </button>
 
-                                    {confirmDelete === feed.id_fluxrss ? (
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-500 whitespace-nowrap">Confirmer la suppression ?</span>
-                                            <button
-                                                onClick={() => handleDelete(feed.id_fluxrss)}
-                                                className="text-red-600 hover:text-red-700 cursor-pointer"
-                                                title="Confirmer la suppression"
-                                            >
-                                                <FiCheck size={15} />
-                                            </button>
-                                            <button
-                                                onClick={() => setConfirmDelete(null)}
-                                                className="text-gray-400 hover:text-gray-600 cursor-pointer"
-                                                title="Annuler"
-                                            >
-                                                <FiX size={15} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button
-                                            onClick={() => setConfirmDelete(feed.id_fluxrss)}
-                                            className="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
-                                            title="Supprimer le flux"
-                                        >
-                                            <FiTrash2 size={16} />
-                                        </button>
-                                    )}
+                                    <InlineDeleteConfirm
+                                        isConfirming={confirmDelete === feed.id_fluxrss}
+                                        onRequestConfirm={() => setConfirmDelete(feed.id_fluxrss)}
+                                        onConfirm={() => handleDelete(feed.id_fluxrss)}
+                                        onCancel={() => setConfirmDelete(null)}
+                                        wrapperClassName="flex items-center gap-2"
+                                        trashClassName="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
+                                        iconSize={15}
+                                    />
                                 </div>
                             </div>
                         </div>
