@@ -60,7 +60,13 @@ function FeedArticlesView({ feed, token, onBack }) {
             });
             if (!res.ok) throw new Error();
             const data = await res.json();
-            setArticles(Array.isArray(data) ? data : data.data ?? []);
+            const list = Array.isArray(data) ? data : data.data ?? [];
+            list.sort((a, b) => {
+                const da = new Date(a.published_at ?? a.pubDate ?? 0);
+                const db = new Date(b.published_at ?? b.pubDate ?? 0);
+                return db - da;
+            });
+            setArticles(list);
         } catch {
             toast.error({ title: "Erreur", message: "Impossible de charger les articles." });
         } finally {

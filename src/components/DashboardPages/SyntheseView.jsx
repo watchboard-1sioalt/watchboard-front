@@ -48,7 +48,7 @@ function SyntheseModal({
 }) {
     const title = step === "select"
         ? "Sélectionner des ressources à synthétiser"
-        : hasGenerated ? "Édition du rapport final" : "Génération de la synthèse";
+        : hasGenerated ? "Édition de la synthèse finale" : "Génération de la synthèse";
 
     return (
         <div
@@ -238,7 +238,7 @@ function SyntheseModal({
                                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
                                     <div className="flex items-center gap-2 text-gray-900 mb-4">
                                         <FiCpu className="text-blue-600" size={18} />
-                                        <h3 className="text-sm font-semibold">Rapport généré</h3>
+                                        <h3 className="text-sm font-semibold">Synthèse générée</h3>
                                     </div>
 
                                     <textarea
