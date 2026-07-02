@@ -260,6 +260,12 @@ export default function DashboardFlux() {
 
     const handleAdd = async (e) => {
         e.preventDefault();
+
+        if (feeds.some(f => f.url === newUrl)) {
+            toast.error({ title: "Erreur", message: "Ce flux existe déjà." });
+            return;
+        }
+
         setAdding(true);
         try {
             const body = { url: newUrl };

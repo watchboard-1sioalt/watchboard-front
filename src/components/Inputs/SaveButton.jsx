@@ -16,15 +16,15 @@ export default function SaveButton({ saved = false, onSave }) {
     useEffect(() => { setIsSaved(saved); }, [saved]);
 
     const handleSave = async () => {
-        if (saving || isSaved) return;
+        if (saving) return;
         setSaving(true);
-        const next = true;
+        const next = !isSaved;
         setIsSaved(next);
-        setBurstKey((k) => k + 1);
+        if (next) setBurstKey((k) => k + 1);
         try {
-            await onSave(true);
+            await onSave(next);
         } catch {
-            setIsSaved(false);
+            setIsSaved(!next);
         } finally {
             setSaving(false);
         }

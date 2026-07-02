@@ -88,7 +88,7 @@ export default function NotificationBell() {
             {open && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 z-50 w-80 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    <div className="fixed left-2 right-2 top-18 z-50 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-gray-700">Partages reçus</h3>
                             <button

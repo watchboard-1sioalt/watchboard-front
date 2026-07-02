@@ -62,6 +62,12 @@ export default function TagPickerModal({ isOpen, onClose, currentTags = [], toke
     const createAndAttach = useCallback(async () => {
         const tagName = search.trim();
         if (!tagName) return;
+
+        if (alltags.map(t => t.tag.toLocaleLowerCase()).includes(tagName.toLocaleLowerCase())) {
+            toast.error({ title: "Erreur", message: `Le tag ${tagName} existe déjà.` });
+            return;
+        }
+
         setAdding("new");
         try {
             // 1. Créer le tag

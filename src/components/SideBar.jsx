@@ -55,6 +55,15 @@ export default function Sidebar({ activeTab, onTabChange }) {
         return () => window.removeEventListener("resize", onResize);
     }, [isOpen]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        const onScroll = () => {
+            if (window.innerWidth < 768) setIsOpen(false);
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, [isOpen]);
+
     const handleLogout = async () => {
         await logout();
         navigate("/login");

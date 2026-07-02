@@ -250,9 +250,9 @@ export default function DashboardHome() {
                 });
                 if (!res.ok) throw new Error();
                 const ressource = await res.json();
-                setSavedMap(prev => ({ ...prev, [urlKey]: ressource.id }));
+                setSavedMap(prev => ({ ...prev, [urlKey]: ressource.id_ressource }));
                 toast.success({ title: "Article enregistré dans vos ressources" });
-                return ressource.id;
+                return ressource.id_ressource;
             } catch {
                 toast.error({ title: "Erreur lors de l'enregistrement" });
                 return null;
@@ -302,9 +302,7 @@ export default function DashboardHome() {
                 if (!saveRes.ok) throw new Error("Erreur d'indexation pré-partage");
 
                 const ressource = await saveRes.json();
-
-                // id_ressource ou id selon le retour API
-                ressourceId = ressource.id_ressource || ressource.id;
+                ressourceId = ressource?.id_ressource;
 
                 if (!ressourceId) {
                     throw new Error("L'API n'a pas renvoyé d'identifiant de ressource valide.");
@@ -313,7 +311,6 @@ export default function DashboardHome() {
                 setSavedMap(prev => ({ ...prev, [urlKey]: ressourceId }));
             }
 
-            // garde contre l'ID "undefined" renvoyé par l'API
             if (!ressourceId || ressourceId === "undefined") {
                 throw new Error("Identifiant de ressource invalide détecté avant l'envoi.");
             }

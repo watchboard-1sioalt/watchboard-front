@@ -201,6 +201,12 @@ function TagsSection({ token }) {
     const handleCreate = async () => {
         const tagName = newTagInput.trim();
         if (!tagName) return;
+
+        if (tags.map(t => t.tag.toLocaleLowerCase()).includes(tagName.toLocaleLowerCase())) {
+            toast.error({ title: "Erreur", message: `Le tag ${tagName} existe déjà.` });
+            return;
+        }
+
         setCreating(true);
         try {
             const res = await fetch(`${API}/tags/create`, {
