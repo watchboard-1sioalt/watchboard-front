@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { FiRss, FiPlus, FiEdit2, FiCheck, FiX, FiExternalLink, FiArrowLeft, FiRefreshCw, FiTag, FiGlobe } from "react-icons/fi";
 import { FaYoutube } from "react-icons/fa";
 import { useUser } from "../../contexts/UserContext";
@@ -6,7 +6,7 @@ import { useToast } from "../Toast/Toast";
 import Tag from "../Tag";
 import Cards from "../Cards/Cards";
 import TagPickerModal from "../Modal/TagPickerModal";
-import SearchBarView from "../SearchBarView";
+import SearchBarView from "../SearchBarView"; 
 import PageHeader from "../PageHeader";
 import TagFilterBar from "../TagFilterBar";
 import EmptyState from "../EmptyState";
@@ -226,6 +226,31 @@ export default function DashboardFlux() {
             .catch(() => { });
     }, [token]);
 
+    const generateFallbackName = (url, type) => {
+        if (!url) return "";
+        const cleanUrl = url.trim();
+        try {
+            if (type === "youtube") {
+                const handleMatch = cleanUrl.match(/youtube\.com\/@([^\/\?]+)/i);
+                if (handleMatch) return handleMatch[1];
+                
+                const channelMatch = cleanUrl.match(/youtube\.com\/(?:channel|c)\/([^\/\?]+)/i);
+                if (channelMatch) return channelMatch[1];
+                
+                return "Chaîne YouTube";
+            } else {
+                const domainMatch = cleanUrl.match(/^(?:https?:\/\/)?(?:www\.)?([^\/:]+)/i);
+                if (domainMatch) {
+                    const domain = domainMatch[1].split('.')[0];
+                    return domain.charAt(0).toUpperCase() + domain.slice(1);
+                }
+                return "Flux RSS";
+            }
+        } catch {
+            return type === "youtube" ? "Chaîne YouTube" : "Flux RSS";
+        }
+    };
+
     const availableTags = useMemo(() => {
         const map = new Map();
         allTags.forEach(t => map.set(t.id_tag, t));
@@ -269,7 +294,12 @@ export default function DashboardFlux() {
         setAdding(true);
         try {
             const body = { url: newUrl };
-            if (newName.trim()) body.name = newName.trim();
+            if (newName.trim()) {
+                body.name = newName.trim();
+            } else {
+                body.name = generateFallbackName(newUrl, newType);
+            }
+
             const res = await fetch(`${API}/feeds`, {
                 method: "POST",
                 headers: authHeaders(),
@@ -589,7 +619,7 @@ export default function DashboardFlux() {
                                         onConfirm={() => handleDelete(feed.id_fluxrss)}
                                         onCancel={() => setConfirmDelete(null)}
                                         wrapperClassName="flex items-center gap-2"
-                                        trashClassName="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
+                                        trashClassName="text-gray-300 hover:text-red-500 cursor-pointer"
                                         iconSize={15}
                                     />
                                 </div>
