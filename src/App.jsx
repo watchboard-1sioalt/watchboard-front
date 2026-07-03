@@ -10,14 +10,11 @@ function App() {
     <main className="flex flex-col">
       <Navbar />
       <Routes>
-        {/* Routes publiques */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
-        {/* Routes protégées (connexion requise) */}
         <Route path="/" element={<AuthGuard><Home /></AuthGuard>} />
 
-        {/* route admin : */}
+        {/* route admin ex: */}
         {/* <Route path="/admin" element={<AuthGuard adminOnly><Admin /></AuthGuard>} /> */}
       </Routes>
     </main>

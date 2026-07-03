@@ -4,7 +4,7 @@ import { FiPlus, FiCheckCircle } from "react-icons/fi";
 export default function SubscribeButton({ isSubscribed, onClick }) {
     return (
         <motion.button
-            layout // Anime fluidement le changement de taille si le texte ou les paddings changent
+            layout
             onClick={onClick}
             whileHover={isSubscribed ? {} : { scale: 1.02 }}
             whileTap={isSubscribed ? {} : { scale: 0.98 }}
@@ -14,11 +14,10 @@ export default function SubscribeButton({ isSubscribed, onClick }) {
                 borderColor: isSubscribed ? "#bbf7d0" : "#e5e7eb",     // border-green-200 vs border-gray-200
                 color: isSubscribed ? "#16a34a" : "#6b7280",           // text-green-600 vs text-gray-500
             }}
-            className={`w-full flex items-center justify-center py-1.5 border rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
-                !isSubscribed 
-                    ? "hover:bg-blue-600 hover:text-white hover:border-blue-600 cursor-pointer shadow-2xs" 
+            className={`w-full flex items-center justify-center py-1.5 border rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${!isSubscribed
+                    ? "hover:bg-blue-600 hover:text-white hover:border-blue-600 cursor-pointer shadow-2xs"
                     : "select-none"
-            }`}
+                }`}
         >
             <AnimatePresence mode="wait">
                 {isSubscribed ? (

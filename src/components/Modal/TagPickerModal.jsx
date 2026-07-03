@@ -25,7 +25,7 @@ export default function TagPickerModal({ isOpen, onClose, currentTags = [], toke
     const [allTags, setAllTags] = useState([]);
     const [search, setSearch] = useState("");
     const [loadingTags, setLoadingTags] = useState(false);
-    const [adding, setAdding] = useState(null); // id_tag | "new"
+    const [adding, setAdding] = useState(null);
     const [generating, setGenerating] = useState(false);
 
     const currentIds = new Set(currentTags.map(t => t.id_tag));
@@ -70,7 +70,6 @@ export default function TagPickerModal({ isOpen, onClose, currentTags = [], toke
 
         setAdding("new");
         try {
-            // 1. Créer le tag
             const createRes = await fetch(`${API}/tags/create`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -78,15 +77,12 @@ export default function TagPickerModal({ isOpen, onClose, currentTags = [], toke
             });
             if (!createRes.ok) throw new Error();
 
-            // 2. Retrouver son id_tag via autocomplete
             const acRes = await fetch(`${API}/tags/autocomplete?q=${encodeURIComponent(tagName)}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const suggestions = await acRes.json();
             const found = suggestions.find(t => t.tag.toLowerCase() === tagName.toLowerCase());
             if (!found) throw new Error("Tag introuvable après création");
-
-            // 3. Déléguer l'attach au parent
             await onAttach(found);
 
             setAllTags(prev => [...prev, found]);
@@ -128,7 +124,6 @@ export default function TagPickerModal({ isOpen, onClose, currentTags = [], toke
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Ajouter un tag">
-            {/* Auto-tag IA */}
             {onGenerateTags && (
                 <button
                     onClick={handleAutoTag}
@@ -140,7 +135,6 @@ export default function TagPickerModal({ isOpen, onClose, currentTags = [], toke
                 </button>
             )}
 
-            {/* Recherche */}
             <div className="relative mb-4">
                 <FiSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input

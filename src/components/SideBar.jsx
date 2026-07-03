@@ -33,7 +33,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
     const { user, logout } = useUser();
     const navigate = useNavigate();
 
-    // Expose sidebar width as a CSS variable so the content area can react
     useEffect(() => {
         const isMobile = window.innerWidth < 768;
         document.documentElement.style.setProperty(
@@ -71,7 +70,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
 
     return (
         <>
-            {/* Mobile backdrop */}
             {isOpen && (
                 <div
                     className="fixed inset-0 bg-black/20 z-20 md:hidden"
@@ -79,7 +77,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
                 />
             )}
 
-            {/* Sidebar */}
             <aside
                 className={`
                     fixed top-16 left-0 z-30
@@ -91,7 +88,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
                     ${isOpen ? "w-64" : "w-0 md:w-14"}
                 `}
             >
-                {/* Protruding toggle — desktop only, always visible */}
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     className="hidden md:flex absolute -right-5 top-6 z-10 items-center justify-center
@@ -102,10 +98,8 @@ export default function Sidebar({ activeTab, onTabChange }) {
                     {isOpen ? <FiChevronLeft size={13} /> : <FiChevronRight size={13} />}
                 </button>
 
-                {/* Inner wrapper clips overflowing text during transition */}
                 <div className="flex flex-col h-full overflow-hidden">
 
-                    {/* Mobile close button — visible only when open on small screens */}
                     <div className="md:hidden flex justify-end px-2 pt-3">
                         <button
                             onClick={() => setIsOpen(false)}
@@ -116,7 +110,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
                         </button>
                     </div>
 
-                    {/* Nav */}
                     <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1">
                         {menuItems.map((item) => {
                             if (item.admin && !user.admin) return;
@@ -145,7 +138,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
                         })}
                     </nav>
 
-                    {/* User section */}
                     <div className="shrink-0 border-t border-gray-300 bg-gray-50/50 px-3 pb-2 pt-1">
                         <div className={`flex items-center gap-3 px-2 py-2 ${isOpen ? "justify-between" : "justify-center"}`}>
                             {isOpen && (
@@ -179,7 +171,6 @@ export default function Sidebar({ activeTab, onTabChange }) {
                 </div>
             </aside>
 
-            {/* Mobile floating open button (shown only when closed on mobile) */}
             {!isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}

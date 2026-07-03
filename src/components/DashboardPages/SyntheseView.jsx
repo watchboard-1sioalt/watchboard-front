@@ -147,7 +147,7 @@ const syntheseLabel = (s) => {
     return "Synthèse sans contenu";
 };
 
-// MODALE DE CRÉATION / ÉDITION
+// MODALE DE CREATION / EDITION
 function SyntheseModal({
     step, onClose,
     search, setSearch,
@@ -170,7 +170,7 @@ function SyntheseModal({
     const editorRef = useRef(null);
     const generatedSectionRef = useRef(null); // Ref pour le scroll automatique
 
-    // Initialisation du contenu HTML de l'éditeur
+    // contenu HTML de l'editeur
     useEffect(() => {
         if (editorRef.current && step === "edit" && hasGenerated) {
             if (editorRef.current.innerHTML !== generatedText) {
@@ -179,7 +179,6 @@ function SyntheseModal({
         }
     }, [step, hasGenerated]);
 
-    // TRANSITION : Scroll automatique et effortless dès que la synthèse est générée
     useEffect(() => {
         if (hasGenerated && generatedSectionRef.current) {
             generatedSectionRef.current.scrollIntoView({
@@ -485,7 +484,6 @@ export default function SyntheseView() {
     const [generatedText, setGeneratedText] = useState("");
     const [hasGenerated, setHasGenerated] = useState(false);
 
-    // États spécifiques pour l'édition WYSIWYG en vue détail
     const detailEditorRef = useRef(null);
     const [detailText, setDetailText] = useState("");
     const [isDetailDirty, setIsDetailDirty] = useState(false);
@@ -523,7 +521,7 @@ export default function SyntheseView() {
         if (token) fetchSavedSyntheses();
     }, [token, fetchSavedSyntheses]);
 
-    // Initialisation HTML de la zone éditable du détail
+    // HTML de la zone éditable du détail
     useEffect(() => {
         if (viewMode === "detail" && activeSynthese && detailEditorRef.current) {
             detailEditorRef.current.innerHTML = activeSynthese.synthese || "";
@@ -777,7 +775,7 @@ export default function SyntheseView() {
 
     const detailRessources = activeSynthese?.ressources ?? [];
 
-    // ───────────────────────────── RENDU : DÉTAIL D'UNE SYNTHÈSE (AVEC WYSIWYG) ─────────────────────────────
+    // details d'une synthese
     if (viewMode === "detail" && activeSynthese) {
         const id = syntheseKey(activeSynthese);
         return (
@@ -932,7 +930,7 @@ export default function SyntheseView() {
         );
     }
 
-    // ───────────────────────────── RENDU : LISTE DES SYNTHÈSES ─────────────────────────────
+    // list syntheses
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -1014,7 +1012,7 @@ export default function SyntheseView() {
                     onClose={closeModal}
                     search={search} setSearch={setSearch}
                     availableTypes={availableTypes} selectedTypes={selectedTypes} toggleType={toggleType}
-                    availableTags={availableTags} // <-- Le correctif est ici (pas d'espace !)
+                    availableTags={availableTags}
                     selectedTagIds={selectedTagIds} toggleTag={toggleTag}
                     dateFilter={dateFilter} setDateFilter={setDateFilter}
                     resetFilters={resetFilters}

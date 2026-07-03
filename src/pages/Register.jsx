@@ -18,7 +18,6 @@ export default function Register() {
     const handleRegister = async (e) => {
         e.preventDefault();
         try {
-            // 2. Envoyer la requête POST à ton API backend
             const response = await fetch(`${API}/auth/register`, {
                 method: "POST",
                 headers: {
@@ -27,7 +26,6 @@ export default function Register() {
                 body: JSON.stringify(credentials),
             });
 
-            // 3. Lire la réponse du serveur
             const data = await response.json();
 
             if (response.ok) {
@@ -61,7 +59,6 @@ export default function Register() {
                     });
 
                 } else {
-                    // Erreur générique au cas où le serveur renvoie un autre problème
                     toast.error({
                         title: "Erreur de validation",
                         message: data.message || "Une erreur est survenue."
@@ -69,21 +66,18 @@ export default function Register() {
                 }
             }
         } catch (error) {
-            // Bloc catch indispensable pour intercepter les pannes réseau
             console.error("Erreur réseau :", error);
             toast.error({
                 title: "Erreur réseau",
                 message: "Impossible de joindre le serveur. Veuillez réessayer plus tard."
             });
         }
-    }; // Ferme proprement handleRegister
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-            {/* Boîte blanche identique à celle du Login */}
             <div className="flex flex-col justify-center items-center p-8 bg-white rounded-2xl border border-gray-100 shadow-sm max-w-sm w-full mx-4">
 
-                {/* Header du formulaire */}
                 <div className="flex flex-col justify-center items-center mb-6">
                     <div className="text-blue-600 rounded-full bg-blue-50 p-4 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
@@ -93,7 +87,6 @@ export default function Register() {
                     <h1 className="text-xl font-bold text-gray-900">Inscription</h1>
                 </div>
 
-                {/* Formulaire - Ajout du onSubmit global */}
                 <form onSubmit={handleRegister} className="w-full flex flex-col gap-4">
 
                     <TextInput
@@ -128,7 +121,6 @@ export default function Register() {
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-blue-500 bg-gray-50/50 transition-colors"
                     />
 
-                    {/* Bouton d'inscription natif submit */}
                     <div className="pt-2">
                         <button
                             type="submit"
@@ -141,7 +133,6 @@ export default function Register() {
 
                 <p className="text-gray-400 text-xs mt-4">OU</p>
 
-                {/* Redirections */}
                 <Link to="/Login">
                     <button className="text-sm font-medium text-blue-600 mt-2 hover:underline cursor-pointer bg-transparent border-none">
                         Se connecter
