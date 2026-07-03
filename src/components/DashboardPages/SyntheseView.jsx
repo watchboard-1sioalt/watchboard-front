@@ -56,6 +56,7 @@ function htmlToMarkdown(html) {
         .replace(/<strong>([\s\S]*?)<\/strong>/gi, "**$1**")
         .replace(/<b>([\s\S]*?)<\/b>/gi, "**$1**")
         .replace(/<em>([\s\S]*?)<\/em>/gi, "*$1*")
+        .replace(/<span[^>]*>([\s\S]*?)<\/span>/gi, "==$1==")
         .replace(/<i>([\s\S]*?)<\/i>/gi, "*$1*")
         .replace(/<br\s*\/?>/gi, "\n")
         .replace(/<\/p>/gi, "\n\n")
